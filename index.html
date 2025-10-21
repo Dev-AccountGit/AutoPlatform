@@ -1,20 +1,30 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoPlat - Automação Educacional Gratuita</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AutoPlat - Automação Educacional</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            overflow-x: hidden;
+            overflow-y: auto;
+            touch-action: pan-y;
+            -webkit-text-size-adjust: 100%;
         }
 
         body {
@@ -24,9 +34,18 @@
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        /* Background Animation */
+        /* Prevent Zoom */
+        input, textarea, select {
+            font-size: 16px !important;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        /* Background */
         body::before {
             content: '';
             position: fixed;
@@ -36,8 +55,7 @@
             height: 100%;
             background: 
                 radial-gradient(circle at 20% 30%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(109, 40, 217, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(88, 28, 135, 0.1) 0%, transparent 70%);
+                radial-gradient(circle at 80% 70%, rgba(109, 40, 217, 0.15) 0%, transparent 50%);
             z-index: -1;
             animation: bgPulse 15s ease-in-out infinite;
         }
@@ -47,108 +65,131 @@
             50% { opacity: 0.8; }
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Header */
-        header {
-            background: rgba(17, 17, 17, 0.6);
+        /* Top Navigation */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(17, 17, 17, 0.95);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            padding: 24px 32px;
-            border-radius: 20px;
-            margin-bottom: 40px;
-            border: 1px solid rgba(147, 51, 234, 0.2);
-            animation: slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 8px 32px rgba(147, 51, 234, 0.1);
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .header-content {
+            border-bottom: 1px solid rgba(147, 51, 234, 0.2);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0 24px;
+            z-index: 1000;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
         }
 
-        .logo-section {
+        .nav-logo {
             display: flex;
             align-items: center;
-            gap: 16px;
-        }
-
-        .logo-icon {
-            font-size: 42px;
-            filter: drop-shadow(0 0 20px rgba(147, 51, 234, 0.5));
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .logo-text {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .logo-title {
-            font-size: 32px;
+            gap: 12px;
+            font-size: 20px;
             font-weight: 700;
             background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
         }
 
-        .logo-subtitle {
-            font-size: 13px;
-            color: #a855f7;
-            font-weight: 500;
-            margin-top: 2px;
+        .nav-logo-icon {
+            font-size: 28px;
+            filter: drop-shadow(0 0 12px rgba(147, 51, 234, 0.6));
         }
 
-        /* Auth Section */
-        .auth-container {
-            display: none;
-            max-width: 480px;
-            margin: 60px auto;
-            background: rgba(17, 17, 17, 0.8);
-            backdrop-filter: blur(40px) saturate(180%);
-            -webkit-backdrop-filter: blur(40px) saturate(180%);
-            padding: 48px;
-            border-radius: 28px;
+        .nav-menu {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: rgba(147, 51, 234, 0.1);
             border: 1px solid rgba(147, 51, 234, 0.3);
-            animation: fadeInScale 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 10px;
+            color: #c084fc;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(147, 51, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 2px solid rgba(147, 51, 234, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.6);
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 60px;
+            padding: 24px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Auth Pages */
+        .auth-page {
+            display: none;
+            min-height: calc(100vh - 60px);
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .auth-page.active {
+            display: flex;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            background: rgba(17, 17, 17, 0.95);
+            backdrop-filter: blur(40px) saturate(180%);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(147, 51, 234, 0.3);
             box-shadow: 0 20px 60px rgba(147, 51, 234, 0.2);
-        }
-
-        @keyframes fadeInScale {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .auth-container.active {
-            display: block;
         }
 
         .auth-header {
@@ -157,7 +198,7 @@
         }
 
         .auth-icon {
-            font-size: 56px;
+            font-size: 64px;
             margin-bottom: 16px;
             filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.4));
         }
@@ -166,44 +207,64 @@
             font-size: 28px;
             font-weight: 700;
             margin-bottom: 8px;
-            color: #ffffff;
-            letter-spacing: -0.5px;
         }
 
         .auth-subtitle {
             color: #a855f7;
             font-size: 15px;
-            font-weight: 500;
         }
 
-        .info-box {
-            background: rgba(147, 51, 234, 0.1);
-            border: 1px solid rgba(147, 51, 234, 0.3);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 28px;
-            animation: pulse 2s ease-in-out infinite;
+        .profile-upload {
+            text-align: center;
+            margin-bottom: 24px;
         }
 
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4); }
-            50% { box-shadow: 0 0 20px 0 rgba(147, 51, 234, 0.2); }
-        }
-
-        .info-box-title {
+        .profile-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+            margin: 0 auto 16px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            color: #c084fc;
-            margin-bottom: 10px;
-            font-size: 15px;
+            justify-content: center;
+            font-size: 40px;
+            cursor: pointer;
+            border: 3px solid rgba(147, 51, 234, 0.5);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
         }
 
-        .info-box-text {
-            color: #d8b4fe;
-            font-size: 14px;
-            line-height: 1.6;
+        .profile-preview:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(147, 51, 234, 0.6);
+        }
+
+        .profile-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-preview::after {
+            content: '📷';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #9333ea;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border: 2px solid #000;
+        }
+
+        #profileImageInput {
+            display: none;
         }
 
         .input-group {
@@ -225,8 +286,8 @@
             border: 1px solid rgba(147, 51, 234, 0.3);
             border-radius: 14px;
             color: #ffffff;
-            font-size: 15px;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            font-size: 16px;
+            transition: all 0.3s ease;
             font-weight: 500;
         }
 
@@ -251,9 +312,8 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.3s ease;
             margin-top: 12px;
-            box-shadow: 0 8px 24px rgba(147, 51, 234, 0.3);
         }
 
         .btn:hover {
@@ -261,199 +321,74 @@
             box-shadow: 0 12px 32px rgba(147, 51, 234, 0.4);
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .btn-secondary {
             background: rgba(147, 51, 234, 0.15);
             border: 1px solid rgba(147, 51, 234, 0.3);
-            box-shadow: none;
         }
 
-        .btn-secondary:hover {
-            background: rgba(147, 51, 234, 0.25);
-            box-shadow: 0 8px 24px rgba(147, 51, 234, 0.2);
+        .info-box {
+            background: rgba(147, 51, 234, 0.1);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #d8b4fe;
+            line-height: 1.6;
         }
 
-        /* Dashboard */
-        .dashboard {
+        /* Dashboard Content */
+        .dashboard-page {
             display: none;
-            animation: fadeIn 1s ease;
+            animation: fadeIn 0.6s ease;
         }
 
-        .dashboard.active {
+        .dashboard-page.active {
             display: block;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Welcome Section */
-        .welcome-section {
-            background: rgba(17, 17, 17, 0.6);
-            backdrop-filter: blur(20px) saturate(180%);
-            padding: 40px;
-            border-radius: 24px;
-            margin-bottom: 40px;
-            border: 1px solid rgba(147, 51, 234, 0.2);
-            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .welcome-greeting {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, #ffffff 0%, #c084fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .welcome-text {
-            color: #a855f7;
-            font-size: 16px;
-            font-weight: 500;
-            line-height: 1.6;
-        }
-
-        /* About Section */
-        .about-section {
-            background: rgba(17, 17, 17, 0.6);
-            backdrop-filter: blur(20px) saturate(180%);
-            padding: 40px;
-            border-radius: 24px;
-            margin-bottom: 40px;
-            border: 1px solid rgba(147, 51, 234, 0.2);
-            animation: slideUp 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .about-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .about-icon {
-            font-size: 48px;
-            filter: drop-shadow(0 0 20px rgba(147, 51, 234, 0.5));
-        }
-
-        .about-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        .about-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            margin-top: 24px;
-        }
-
-        .about-card {
-            background: rgba(147, 51, 234, 0.05);
-            border: 1px solid rgba(147, 51, 234, 0.2);
-            border-radius: 18px;
-            padding: 24px;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .about-card:hover {
-            background: rgba(147, 51, 234, 0.1);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 32px rgba(147, 51, 234, 0.2);
-        }
-
-        .about-card-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-        }
-
-        .about-card-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #c084fc;
-            margin-bottom: 8px;
-        }
-
-        .about-card-text {
-            font-size: 14px;
-            color: #a855f7;
-            line-height: 1.6;
-        }
-
-        /* Platforms Section */
-        .platforms-section {
-            margin-top: 40px;
-        }
-
-        .section-header {
+        .section {
             margin-bottom: 32px;
         }
 
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
         .section-title {
-            font-size: 32px;
+            font-size: 24px;
             font-weight: 700;
             color: #ffffff;
-            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .section-subtitle {
-            font-size: 16px;
-            color: #a855f7;
-            font-weight: 500;
-        }
-
+        /* Platform Cards */
         .platforms-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
         }
 
         .platform-card {
-            background: rgba(17, 17, 17, 0.6);
-            backdrop-filter: blur(20px) saturate(180%);
-            padding: 36px;
-            border-radius: 24px;
-            border: 1px solid rgba(147, 51, 234, 0.2);
+            background: rgba(17, 17, 17, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 20px;
+            padding: 24px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
-            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            animation-fill-mode: both;
-        }
-
-        .platform-card:nth-child(1) { animation-delay: 0.1s; }
-        .platform-card:nth-child(2) { animation-delay: 0.2s; }
-        .platform-card:nth-child(3) { animation-delay: 0.3s; }
-        .platform-card:nth-child(4) { animation-delay: 0.4s; }
-        .platform-card:nth-child(5) { animation-delay: 0.5s; }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .platform-card::before {
@@ -468,148 +403,331 @@
             transition: opacity 0.4s ease;
         }
 
-        .platform-card:hover::before {
-            opacity: 1;
-        }
-
         .platform-card:hover {
             transform: translateY(-8px);
             border-color: #a855f7;
             box-shadow: 0 20px 60px rgba(147, 51, 234, 0.3);
         }
 
-        .platform-content {
-            position: relative;
-            z-index: 1;
+        .platform-card:hover::before {
+            opacity: 1;
         }
 
         .platform-icon {
-            font-size: 56px;
-            margin-bottom: 20px;
+            font-size: 48px;
+            margin-bottom: 16px;
             display: block;
             filter: drop-shadow(0 4px 12px rgba(147, 51, 234, 0.3));
         }
 
         .platform-name {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             color: #ffffff;
-            letter-spacing: -0.3px;
         }
 
         .platform-desc {
-            font-size: 14px;
+            font-size: 13px;
             color: #a855f7;
-            line-height: 1.7;
-            margin-bottom: 16px;
+            line-height: 1.6;
+            margin-bottom: 12px;
         }
 
         .platform-features {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 16px;
+            gap: 6px;
+            margin-top: 12px;
         }
 
         .feature-tag {
             background: rgba(147, 51, 234, 0.2);
             border: 1px solid rgba(147, 51, 234, 0.3);
             color: #c084fc;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Admin Panel */
+        .admin-section {
+            background: rgba(17, 17, 17, 0.8);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .admin-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .admin-tab {
+            padding: 10px 20px;
+            background: rgba(147, 51, 234, 0.1);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 10px;
+            color: #c084fc;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-tab:hover {
+            background: rgba(147, 51, 234, 0.2);
+        }
+
+        .admin-tab.active {
+            background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .admin-content {
+            display: none;
+        }
+
+        .admin-content.active {
+            display: block;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 15px;
+        }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .user-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-card:hover {
+            background: rgba(147, 51, 234, 0.1);
+            border-color: #a855f7;
+            transform: translateY(-4px);
+        }
+
+        .user-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .user-card-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            overflow: hidden;
+        }
+
+        .user-card-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-card-info h4 {
+            font-size: 16px;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .user-card-info p {
+            font-size: 12px;
+            color: #a855f7;
+        }
+
+        .request-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .request-platform {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .request-status {
             padding: 6px 12px;
             border-radius: 8px;
             font-size: 12px;
             font-weight: 600;
         }
 
-        .platform-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.3);
+        .status-pending {
+            background: rgba(251, 191, 36, 0.2);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: #fbbf24;
+        }
+
+        .status-approved {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
             color: #4ade80;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-top: 16px;
         }
 
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            background: #4ade80;
-            border-radius: 50%;
-            animation: blink 2s ease-in-out infinite;
+        .status-completed {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: #60a5fa;
         }
 
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        .status-rejected {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
         }
 
-        /* Admin Panel */
-        .admin-panel {
-            display: none;
-            margin-top: 40px;
-            animation: fadeIn 1s ease;
-        }
-
-        .admin-panel.active {
-            display: block;
-        }
-
-        .admin-header {
-            background: rgba(17, 17, 17, 0.6);
-            backdrop-filter: blur(20px) saturate(180%);
-            padding: 32px;
-            border-radius: 24px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .admin-title {
-            font-size: 32px;
-            font-weight: 700;
-            color: #ffffff;
+        .request-actions {
             display: flex;
-            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .action-btn.approve {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: #ffffff;
+        }
+
+        .action-btn.complete {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+        }
+
+        .action-btn.reject {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #ffffff;
+        }
+
+        .action-btn.delete {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
+        }
+
+        /* Reviews Section */
+        .reviews-container {
+            display: grid;
             gap: 16px;
         }
 
-        .users-table-container {
-            background: rgba(17, 17, 17, 0.6);
-            backdrop-filter: blur(20px) saturate(180%);
-            border-radius: 24px;
-            padding: 32px;
+        .review-card {
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(147, 51, 234, 0.2);
-            overflow-x: auto;
+            border-radius: 16px;
+            padding: 20px;
         }
 
-        table {
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .review-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .review-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            overflow: hidden;
+        }
+
+        .review-avatar img {
             width: 100%;
-            border-collapse: collapse;
+            height: 100%;
+            object-fit: cover;
         }
 
-        th {
-            text-align: left;
-            padding: 16px;
-            color: #c084fc;
-            font-weight: 600;
+        .review-info h4 {
             font-size: 14px;
-            border-bottom: 2px solid rgba(147, 51, 234, 0.3);
+            color: #ffffff;
+            margin-bottom: 4px;
         }
 
-        td {
-            padding: 16px;
+        .review-stars {
+            font-size: 16px;
+        }
+
+        .review-text {
             color: #a855f7;
             font-size: 14px;
-            border-bottom: 1px solid rgba(147, 51, 234, 0.1);
+            line-height: 1.6;
+            margin-bottom: 8px;
         }
 
-        tr:hover {
-            background: rgba(147, 51, 234, 0.05);
+        .review-date {
+            font-size: 12px;
+            color: #6b21a8;
+        }
+
+        .review-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
         }
 
         /* Modal */
@@ -620,12 +738,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(10px);
-            z-index: 1000;
+            z-index: 2000;
             justify-content: center;
             align-items: center;
-            animation: fadeIn 0.3s ease;
+            padding: 20px;
         }
 
         .modal.active {
@@ -633,26 +751,26 @@
         }
 
         .modal-content {
-            background: rgba(17, 17, 17, 0.95);
-            backdrop-filter: blur(40px) saturate(180%);
-            padding: 48px;
-            border-radius: 28px;
+            background: rgba(17, 17, 17, 0.98);
+            backdrop-filter: blur(40px);
+            padding: 40px;
+            border-radius: 24px;
             max-width: 500px;
-            width: 90%;
+            width: 100%;
             border: 1px solid rgba(147, 51, 234, 0.3);
-            animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             box-shadow: 0 24px 80px rgba(147, 51, 234, 0.3);
             text-align: center;
+            animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes modalSlide {
             from {
                 opacity: 0;
-                transform: translateY(-40px) scale(0.95);
+                transform: scale(0.9) translateY(-20px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
+                transform: scale(1) translateY(0);
             }
         }
 
@@ -663,61 +781,155 @@
         }
 
         .modal-title {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
-            margin-bottom: 16px;
-            color: #ffffff;
+            margin-bottom: 12px;
         }
 
         .modal-message {
             color: #a855f7;
-            line-height: 1.7;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        /* User Profile Modal */
+        .profile-modal-content {
+            max-width: 600px;
+        }
+
+        .profile-details {
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .profile-field {
+            background: rgba(147, 51, 234, 0.1);
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .profile-field-label {
+            font-size: 12px;
+            color: #a855f7;
+            margin-bottom: 6px;
+        }
+
+        .profile-field-value {
             font-size: 15px;
-            margin-bottom: 32px;
+            color: #ffffff;
+            font-weight: 600;
         }
 
-        .logout-btn {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            margin-top: 20px;
+        /* Request Platform Modal */
+        .platform-request-form {
+            text-align: left;
+            margin-top: 24px;
         }
 
-        .logout-btn:hover {
-            box-shadow: 0 12px 32px rgba(220, 38, 38, 0.4);
+        .form-textarea {
+            width: 100%;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 14px;
+            color: #ffffff;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #a855f7;
+            box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.1);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(147, 51, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(147, 51, 234, 0.6);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b21a8;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                text-align: center;
+            .top-nav {
+                padding: 0 16px;
             }
 
-            .auth-container {
-                padding: 32px 24px;
+            .nav-logo {
+                font-size: 18px;
             }
 
-            .welcome-greeting {
-                font-size: 28px;
+            .main-content {
+                padding: 16px;
             }
 
             .platforms-grid {
                 grid-template-columns: 1fr;
             }
 
-            .about-content {
+            .users-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .admin-tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 8px;
+            }
+
+            .modal-content {
+                padding: 24px;
             }
         }
 
-        /* Loading Animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(168, 85, 247, 0.3);
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(147, 51, 234, 0.2);
+            border-top-color: #9333ea;
             border-radius: 50%;
-            border-top-color: #a855f7;
-            animation: spin 1s ease-in-out infinite;
+            animation: spin 1s linear infinite;
+            margin: 40px auto;
         }
 
         @keyframes spin {
@@ -726,340 +938,472 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <div class="logo-section">
-                    <div class="logo-icon">🚀</div>
-                    <div class="logo-text">
-                        <div class="logo-title">AutoPlat</div>
-                        <div class="logo-subtitle">Automação Educacional Gratuita</div>
-                    </div>
-                </div>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-logo">
+            <span class="nav-logo-icon">🚀</span>
+            <span>AutoPlat</span>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-btn active" onclick="showPage('dashboard')" id="navDashboard" style="display: none;">
+                <span>🏠</span>
+                <span>Início</span>
             </div>
-        </header>
+            <div class="nav-btn" onclick="showPage('reviews')" id="navReviews" style="display: none;">
+                <span>⭐</span>
+                <span>Avaliações</span>
+            </div>
+            <div class="nav-btn" onclick="showPage('admin')" id="navAdmin" style="display: none;">
+                <span>🔐</span>
+                <span>Admin</span>
+            </div>
+            <div class="user-avatar" onclick="showUserMenu()" id="userAvatar" style="display: none;">
+                👤
+            </div>
+        </div>
+    </nav>
 
-        <!-- Login Form -->
-        <div class="auth-container active" id="loginForm">
-            <div class="auth-header">
-                <div class="auth-icon">🔐</div>
-                <h2 class="auth-title">Bem-vindo de volta</h2>
-                <p class="auth-subtitle">Entre para acessar a plataforma</p>
-            </div>
-            
-            <div class="info-box">
-                <div class="info-box-title">
-                    <span>⚠️</span>
-                    <span>Aviso de Transparência</span>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Login Page -->
+        <div class="auth-page active" id="loginPage">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="auth-icon">🔐</div>
+                    <h2 class="auth-title">Bem-vindo de volta</h2>
+                    <p class="auth-subtitle">Entre para acessar a plataforma</p>
                 </div>
-                <div class="info-box-text">
-                    Os administradores terão acesso às suas credenciais exclusivamente para realizar as automações solicitadas. Ao continuar, você concorda com esta política de uso.
+                
+                <div class="info-box">
+                    ⚠️ Os administradores terão acesso às suas credenciais exclusivamente para realizar as automações solicitadas.
                 </div>
-            </div>
 
-            <div class="input-group">
-                <label>📧 Email</label>
-                <input type="email" id="loginEmail" placeholder="seu@email.com">
+                <div class="input-group">
+                    <label>📧 Email</label>
+                    <input type="email" id="loginEmail" placeholder="seu@email.com">
+                </div>
+                <div class="input-group">
+                    <label>🔒 Senha</label>
+                    <input type="password" id="loginPassword" placeholder="Digite sua senha">
+                </div>
+                <button class="btn" onclick="login()">Entrar na Plataforma</button>
+                <button class="btn btn-secondary" onclick="showPage('register')">Criar Nova Conta</button>
             </div>
-            <div class="input-group">
-                <label>🔒 Senha</label>
-                <input type="password" id="loginPassword" placeholder="Digite sua senha">
-            </div>
-            <button class="btn" onclick="login()">Entrar na Plataforma</button>
-            <button class="btn btn-secondary" onclick="showRegister()">Criar Nova Conta</button>
         </div>
 
-        <!-- Register Form -->
-        <div class="auth-container" id="registerForm">
-            <div class="auth-header">
-                <div class="auth-icon">✨</div>
-                <h2 class="auth-title">Criar Conta</h2>
-                <p class="auth-subtitle">Junte-se à nossa comunidade</p>
-            </div>
-            
-            <div class="info-box">
-                <div class="info-box-title">
-                    <span>🛡️</span>
-                    <span>Política de Privacidade</span>
+        <!-- Register Page -->
+        <div class="auth-page" id="registerPage">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="auth-icon">✨</div>
+                    <h2 class="auth-title">Criar Conta</h2>
+                    <p class="auth-subtitle">Junte-se à nossa comunidade</p>
                 </div>
-                <div class="info-box-text">
-                    Suas credenciais serão armazenadas de forma segura e acessíveis apenas aos administradores para realizar automações. Ao se registrar, você concorda com nossos termos de uso.
+                
+                <div class="profile-upload">
+                    <div class="profile-preview" onclick="document.getElementById('profileImageInput').click()">
+                        <span id="profilePreviewIcon">📷</span>
+                        <img id="profilePreviewImg" style="display: none;">
+                    </div>
+                    <input type="file" id="profileImageInput" accept="image/*" onchange="previewProfileImage(event)">
                 </div>
-            </div>
 
-            <div class="input-group">
-                <label>👤 Nome Completo</label>
-                <input type="text" id="regFullName" placeholder="João Silva">
+                <div class="info-box">
+                    🛡️ Suas credenciais serão armazenadas de forma segura e acessíveis apenas aos administradores.
+                </div>
+
+                <div class="input-group">
+                    <label>👤 Nome Completo</label>
+                    <input type="text" id="regFullName" placeholder="João Silva">
+                </div>
+                <div class="input-group">
+                    <label>🏷️ Apelido</label>
+                    <input type="text" id="regNickname" placeholder="jsilva">
+                </div>
+                <div class="input-group">
+                    <label>📧 Email</label>
+                    <input type="email" id="regEmail" placeholder="seu@email.com">
+                </div>
+                <div class="input-group">
+                    <label>🔒 Senha</label>
+                    <input type="password" id="regPassword" placeholder="Crie uma senha segura">
+                </div>
+                <button class="btn" onclick="register()">Criar Conta</button>
+                <button class="btn btn-secondary" onclick="showPage('login')">Já tenho conta</button>
             </div>
-            <div class="input-group">
-                <label>🏷️ Apelido</label>
-                <input type="text" id="regNickname" placeholder="jsilva">
-            </div>
-            <div class="input-group">
-                <label>📧 Email</label>
-                <input type="email" id="regEmail" placeholder="seu@email.com">
-            </div>
-            <div class="input-group">
-                <label>🔒 Senha</label>
-                <input type="password" id="regPassword" placeholder="Crie uma senha segura">
-            </div>
-            <button class="btn" onclick="register()">Criar Conta</button>
-            <button class="btn btn-secondary" onclick="showLogin()">Já tenho conta</button>
         </div>
 
-        <!-- Dashboard -->
-        <div class="dashboard" id="dashboard">
-            <!-- Welcome Section -->
-            <div class="welcome-section">
-                <h1 class="welcome-greeting">Olá, <span id="userName"></span>! 👋</h1>
-                <p class="welcome-text">Seja bem-vindo à AutoPlat. Selecione a plataforma educacional que deseja automatizar e nossa equipe anônima cuidará de tudo para você.</p>
-                <button class="btn logout-btn" onclick="logout()">Sair da Conta</button>
-            </div>
-
-            <!-- About Section -->
-            <div class="about-section">
-                <div class="about-header">
-                    <div class="about-icon">🎯</div>
-                    <h2 class="about-title">Sobre Nossa Equipe</h2>
-                </div>
-                <p style="color: #a855f7; font-size: 15px; line-height: 1.7; margin-bottom: 24px;">
-                    Somos uma equipe anônima de desenvolvedores apaixonados por tecnologia e educação. Nosso objetivo é democratizar o acesso a ferramentas educacionais através de automação inteligente, oferecendo nossos serviços de forma totalmente gratuita para a comunidade.
-                </p>
-                <div class="about-content">
-                    <div class="about-card">
-                        <div class="about-card-icon">🔒</div>
-                        <div class="about-card-title">100% Seguro</div>
-                        <div class="about-card-text">Sistema desenvolvido com as melhores práticas de segurança e criptografia de dados.</div>
-                    </div>
-                    <div class="about-card">
-                        <div class="about-card-icon">⚡</div>
-                        <div class="about-card-title">Automação Rápida</div>
-                        <div class="about-card-text">Processamento eficiente e entrega ágil das automações solicitadas.</div>
-                    </div>
-                    <div class="about-card">
-                        <div class="about-card-icon">💚</div>
-                        <div class="about-card-title">Totalmente Gratuito</div>
-                        <div class="about-card-text">Sem custos ocultos. Nosso compromisso é com a educação acessível.</div>
-                    </div>
-                    <div class="about-card">
-                        <div class="about-card-icon">👥</div>
-                        <div class="about-card-title">Equipe Dedicada</div>
-                        <div class="about-card-text">Profissionais qualificados trabalhando 24/7 para atender suas solicitações.</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Platforms Section -->
-            <div class="platforms-section">
+        <!-- Dashboard Page -->
+        <div class="dashboard-page" id="dashboardPage">
+            <div class="section">
                 <div class="section-header">
-                    <h2 class="section-title">🎓 Plataformas Disponíveis</h2>
-                    <p class="section-subtitle">Selecione a plataforma que deseja automatizar</p>
+                    <div class="section-title">
+                        <span>🎓</span>
+                        <span>Plataformas Disponíveis</span>
+                    </div>
                 </div>
 
                 <div class="platforms-grid">
-                    <div class="platform-card" onclick="requestAutomation('Quizizz')">
-                        <div class="platform-content">
-                            <span class="platform-icon">📝</span>
-                            <h3 class="platform-name">Quizizz</h3>
-                            <p class="platform-desc">Plataforma interativa de quizzes e avaliações gamificadas. Automatizamos a conclusão de questionários, provas e atividades avaliativas com precisão e rapidez.
+                    <div class="platform-card" onclick="openPlatformRequest('Quizizz', '📝')">
+                        <span class="platform-icon">📝</span>
+                        <h3 class="platform-name">Quizizz</h3>
+                        <p class="platform-desc">Plataforma interativa de quizzes e avaliações gamificadas. Automatizamos a conclusão de questionários e provas.</p>
+                        <div class="platform-features">
+                            <span class="feature-tag">Quizzes</span>
+                            <span class="feature-tag">Provas</span>
+                            <span class="feature-tag">Avaliações</span>
+                        </div>
+                    </div>
 
-Quizzes
-Provas
-Avaliações
-
-
-
-Disponível
-
-
-
-<div class="platform-card" onclick="requestAutomation('Wayground')">
-                    <div class="platform-content">
+                    <div class="platform-card" onclick="openPlatformRequest('Wayground', '🌐')">
                         <span class="platform-icon">🌐</span>
                         <h3 class="platform-name">Wayground</h3>
-                        <p class="platform-desc">Plataforma educacional completa com cursos, módulos e trilhas de aprendizado. Automatizamos todo o progresso e conclusão de atividades.</p>
+                        <p class="platform-desc">Plataforma educacional completa com cursos, módulos e trilhas de aprendizado.</p>
                         <div class="platform-features">
                             <span class="feature-tag">Cursos</span>
                             <span class="feature-tag">Módulos</span>
                             <span class="feature-tag">Trilhas</span>
                         </div>
-                        <div class="platform-status">
-                            <span class="status-dot"></span>
-                            <span>Disponível</span>
-                        </div>
                     </div>
-                </div>
 
-                <div class="platform-card" onclick="requestAutomation('Redação Paraná')">
-                    <div class="platform-content">
+                    <div class="platform-card" onclick="openPlatformRequest('Redação Paraná', '✍️')">
                         <span class="platform-icon">✍️</span>
                         <h3 class="platform-name">Redação Paraná</h3>
-                        <p class="platform-desc">Sistema de produção e correção de redações. Geramos redações de alta qualidade seguindo os padrões ENEM e vestibulares.</p>
+                        <p class="platform-desc">Sistema de produção e correção de redações com padrões ENEM e vestibulares.</p>
                         <div class="platform-features">
                             <span class="feature-tag">ENEM</span>
                             <span class="feature-tag">Vestibular</span>
                             <span class="feature-tag">Dissertação</span>
                         </div>
-                        <div class="platform-status">
-                            <span class="status-dot"></span>
-                            <span>Disponível</span>
-                        </div>
                     </div>
-                </div>
 
-                <div class="platform-card" onclick="requestAutomation('Khan Academy')">
-                    <div class="platform-content">
+                    <div class="platform-card" onclick="openPlatformRequest('Khan Academy', '🎓')">
                         <span class="platform-icon">🎓</span>
                         <h3 class="platform-name">Khan Academy</h3>
-                        <p class="platform-desc">Plataforma mundial de educação gratuita. Automatizamos exercícios, vídeos e todas as atividades de matemática, ciências e mais.</p>
+                        <p class="platform-desc">Plataforma mundial de educação gratuita com exercícios de matemática e ciências.</p>
                         <div class="platform-features">
                             <span class="feature-tag">Matemática</span>
                             <span class="feature-tag">Ciências</span>
                             <span class="feature-tag">Exercícios</span>
                         </div>
-                        <div class="platform-status">
-                            <span class="status-dot"></span>
-                            <span>Disponível</span>
-                        </div>
                     </div>
-                </div>
 
-                <div class="platform-card" onclick="requestAutomation('Inglês Paraná')" style="border-color: #a855f7; box-shadow: 0 8px 32px rgba(168, 85, 247, 0.2);">
-                    <div class="platform-content">
+                    <div class="platform-card" onclick="openPlatformRequest('Inglês Paraná', '🗣️')" style="border-color: #a855f7;">
                         <span class="platform-icon">🗣️</span>
                         <h3 class="platform-name">Inglês Paraná ⭐</h3>
-                        <p class="platform-desc">Principal plataforma de aprendizado de inglês. Automatizamos lições, exercícios de vocabulário, gramática, listening e todas as atividades do curso.</p>
+                        <p class="platform-desc">Principal plataforma de aprendizado de inglês com vocabulário, gramática e listening.</p>
                         <div class="platform-features">
                             <span class="feature-tag">Vocabulário</span>
                             <span class="feature-tag">Gramática</span>
                             <span class="feature-tag">Listening</span>
                             <span class="feature-tag">Speaking</span>
                         </div>
-                        <div class="platform-status">
-                            <span class="status-dot"></span>
-                            <span>Plataforma Principal</span>
-                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- My Requests -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>📋</span>
+                        <span>Minhas Solicitações</span>
+                    </div>
+                </div>
+                <div id="userRequestsContainer"></div>
+            </div>
         </div>
 
-        <!-- Admin Panel -->
-        <div class="admin-panel" id="adminPanel">
-            <div class="admin-header">
-                <h2 class="admin-title">
+        <!-- Reviews Page -->
+        <div class="dashboard-page" id="reviewsPage">
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>⭐</span>
+                        <span>Avaliações da Plataforma</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <button class="btn" onclick="openReviewModal()" style="max-width: 300px; margin: 0 auto;">
+                        ⭐ Avaliar Plataforma
+                    </button>
+                </div>
+
+                <div class="reviews-container" id="reviewsContainer"></div>
+            </div>
+        </div>
+
+        <!-- Admin Page -->
+        <div class="dashboard-page" id="adminPage">
+            <div class="admin-section">
+                <div class="section-title" style="margin-bottom: 24px;">
                     <span>🔐</span>
                     <span>Painel de Administrador</span>
-                </h2>
-                <p style="color: #f87171; margin-top: 12px; font-size: 14px;">Acesso exclusivo para visualização de usuários cadastrados</p>
-            </div>
-            <div class="users-table-container">
-                <h3 style="color: #c084fc; margin-bottom: 20px; font-size: 18px;">📊 Usuários Registrados</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>👤 Nome Completo</th>
-                            <th>🏷️ Apelido</th>
-                            <th>📧 Email</th>
-                            <th>🔒 Senha</th>
-                            <th>📅 Data de Registro</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                    </tbody>
-                </table>
-            </div>
+                </div>
 
-            <div class="users-table-container" style="margin-top: 24px;">
-                <h3 style="color: #c084fc; margin-bottom: 20px; font-size: 18px;">📋 Solicitações Pendentes</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>📧 Email do Usuário</th>
-                            <th>🌐 Plataforma</th>
-                            <th>📊 Status</th>
-                            <th>🕐 Data da Solicitação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="requestsTableBody">
-                    </tbody>
-                </table>
+                <div class="admin-tabs">
+                    <div class="admin-tab active" onclick="switchAdminTab('users')">👥 Usuários</div>
+                    <div class="admin-tab" onclick="switchAdminTab('requests')">📋 Solicitações</div>
+                    <div class="admin-tab" onclick="switchAdminTab('reviews')">⭐ Avaliações</div>
+                </div>
+
+                <!-- Users Tab -->
+                <div class="admin-content active" id="adminUsersTab">
+                    <div class="search-box">
+                        <input type="text" id="userSearch" placeholder="🔍 Buscar usuário..." oninput="searchUsers()">
+                    </div>
+                    <div class="users-grid" id="adminUsersGrid"></div>
+                </div>
+
+                <!-- Requests Tab -->
+                <div class="admin-content" id="adminRequestsTab">
+                    <div class="search-box">
+                        <input type="text" id="requestSearch" placeholder="🔍 Buscar solicitação..." oninput="searchRequests()">
+                    </div>
+                    <div id="adminRequestsContainer"></div>
+                </div>
+
+                <!-- Reviews Tab -->
+                <div class="admin-content" id="adminReviewsTab">
+                    <button class="btn" onclick="openFakeReviewModal()" style="margin-bottom: 20px;">
+                        ➕ Criar Avaliação Falsa
+                    </button>
+                    <div class="reviews-container" id="adminReviewsContainer"></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal -->
-<div class="modal" id="modal">
-    <div class="modal-content">
-        <div class="modal-icon" id="modalIcon">✅</div>
-        <h3 class="modal-title" id="modalTitle">Solicitação Enviada!</h3>
-        <p class="modal-message" id="modalMessage">Sua solicitação foi enviada aos administradores.</p>
-        <button class="btn" onclick="closeModal()">Entendi</button>
+    <!-- Modals -->
+    <div class="modal" id="generalModal">
+        <div class="modal-content" id="modalContent">
+            <div class="modal-icon" id="modalIcon">✅</div>
+            <h3 class="modal-title" id="modalTitle">Título</h3>
+            <p class="modal-message" id="modalMessage">Mensagem</p>
+            <button class="btn" onclick="closeModal()">Entendi</button>
+        </div>
     </div>
-</div>
 
-<script>
-    // Configuração do Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyDUZbIXvmDpoN5uakoygovhtGYE6vD4pdM",
-        authDomain: "autoplataform.firebaseapp.com",
-        projectId: "autoplataform",
-        storageBucket: "autoplataform.firebasestorage.app",
-        messagingSenderId: "458879356981",
-        appId: "1:458879356981:web:b9e0ac11d33ebaea37617c",
-        measurementId: "G-EHJYC6S9NP"
-    };
+    <!-- User Profile Modal -->
+    <div class="modal" id="userProfileModal">
+        <div class="modal-content profile-modal-content">
+            <div class="modal-icon" id="profileModalIcon">👤</div>
+            <h3 class="modal-title" id="profileModalName">Nome do Usuário</h3>
+            <div class="profile-details" id="profileDetails"></div>
+            <button class="btn" onclick="closeUserProfileModal()">Fechar</button>
+        </div>
+    </div>
 
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    <!-- Platform Request Modal -->
+    <div class="modal" id="platformRequestModal">
+        <div class="modal-content">
+            <div class="modal-icon" id="platformIcon">🌐</div>
+            <h3 class="modal-title" id="platformTitle">Plataforma</h3>
+            <p class="modal-message">Descreva suas credenciais e detalhes para a automação:</p>
+            <div class="platform-request-form">
+                <div class="input-group">
+                    <label>📧 Email/Usuário da Plataforma</label>
+                    <input type="text" id="platformUsername" placeholder="Seu email ou usuário">
+                </div>
+                <div class="input-group">
+                    <label>🔒 Senha da Plataforma</label>
+                    <input type="password" id="platformPassword" placeholder="Sua senha">
+                </div>
+                <div class="input-group">
+                    <label>📝 Observações Adicionais</label>
+                    <textarea class="form-textarea" id="platformNotes" placeholder="Informações adicionais que possam ajudar..."></textarea>
+                </div>
+            </div>
+            <button class="btn" onclick="submitPlatformRequest()">Enviar Solicitação</button>
+            <button class="btn btn-secondary" onclick="closePlatformRequestModal()">Cancelar</button>
+        </div>
+    </div>
 
-    const ADMIN_EMAIL = 'dev.github.tdc@gmail.com';
+    <!-- Review Modal -->
+    <div class="modal" id="reviewModal">
+        <div class="modal-content">
+            <div class="modal-icon">⭐</div>
+            <h3 class="modal-title">Avaliar Plataforma</h3>
+            <p class="modal-message">Compartilhe sua experiência com a AutoPlat</p>
+            <div class="platform-request-form">
+                <div class="input-group">
+                    <label>⭐ Avaliação</label>
+                    <select id="reviewRating" style="width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 14px; color: #ffffff; font-size: 16px;">
+                        <option value="5">⭐⭐⭐⭐⭐ (5 estrelas)</option>
+                        <option value="4">⭐⭐⭐⭐ (4 estrelas)</option>
+                        <option value="3">⭐⭐⭐ (3 estrelas)</option>
+                        <option value="2">⭐⭐ (2 estrelas)</option>
+                        <option value="1">⭐ (1 estrela)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>💬 Comentário</label>
+                    <textarea class="form-textarea" id="reviewComment" placeholder="Conte-nos sobre sua experiência..."></textarea>
+                </div>
+            </div>
+            <button class="btn" onclick="submitReview()">Enviar Avaliação</button>
+            <button class="btn btn-secondary" onclick="closeReviewModal()">Cancelar</button>
+        </div>
+    </div>
 
-    // Auth State Observer
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            showDashboard(user);
-        } else {
-            showLogin();
-        }
-    });
+    <!-- Fake Review Modal -->
+    <div class="modal" id="fakeReviewModal">
+        <div class="modal-content">
+            <div class="modal-icon">🎭</div>
+            <h3 class="modal-title">Criar Avaliação Falsa</h3>
+            <div class="platform-request-form">
+                <div class="input-group">
+                    <label>👤 Nome do Usuário</label>
+                    <input type="text" id="fakeReviewName" placeholder="Nome fictício">
+                </div>
+                <div class="input-group">
+                    <label>⭐ Avaliação</label>
+                    <select id="fakeReviewRating" style="width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 14px; color: #ffffff; font-size: 16px;">
+                        <option value="5">⭐⭐⭐⭐⭐ (5 estrelas)</option>
+                        <option value="4">⭐⭐⭐⭐ (4 estrelas)</option>
+                        <option value="3">⭐⭐⭐ (3 estrelas)</option>
+                        <option value="2">⭐⭐ (2 estrelas)</option>
+                        <option value="1">⭐ (1 estrela)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>💬 Comentário</label>
+                    <textarea class="form-textarea" id="fakeReviewComment" placeholder="Texto da avaliação..."></textarea>
+                </div>
+            </div>
+            <button class="btn" onclick="submitFakeReview()">Criar Avaliação</button>
+            <button class="btn btn-secondary" onclick="closeFakeReviewModal()">Cancelar</button>
+        </div>
+    </div>
 
-    function showLogin() {
-        document.getElementById('loginForm').classList.add('active');
-        document.getElementById('registerForm').classList.remove('active');
-        document.getElementById('dashboard').classList.remove('active');
-    }
+    <!-- User Menu Modal -->
+    <div class="modal" id="userMenuModal">
+        <div class="modal-content">
+            <div class="modal-icon">👤</div>
+            <h3 class="modal-title" id="userMenuName">Menu</h3>
+            <div style="margin: 24px 0;">
+                <button class="btn" onclick="openProfileEdit()">✏️ Editar Perfil</button>
+                <button class="btn btn-secondary" onclick="logout()" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border: none; margin-top: 12px;">🚪 Sair</button>
+            </div>
+            <button class="btn btn-secondary" onclick="closeUserMenuModal()">Fechar</button>
+        </div>
+    </div>
 
-    function showRegister() {
-        document.getElementById('loginForm').classList.remove('active');
-        document.getElementById('registerForm').classList.add('active');
-    }
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUZbIXvmDpoN5uakoygovhtGYE6vD4pdM",
+            authDomain: "autoplataform.firebaseapp.com",
+            projectId: "autoplataform",
+            storageBucket: "autoplataform.firebasestorage.app",
+            messagingSenderId: "458879356981",
+            appId: "1:458879356981:web:b9e0ac11d33ebaea37617c",
+            measurementId: "G-EHJYC6S9NP"
+        };
 
-    async function login() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
 
-        if (!email || !password) {
-            showModalMessage('❌', 'Erro', 'Por favor, preencha todos os campos!');
-            return;
-        }
+        const ADMIN_EMAIL = 'dev.github.tdc@gmail.com';
+        let currentUser = null;
+        let currentPlatform = null;
+        let allUsers = [];
+        let allRequests = [];
 
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            showModalMessage('✅', 'Sucesso', 'Login realizado com sucesso!');
-        } catch (error) {
-            let errorMessage = 'Email ou senha incorretos!';
-            if (error.code === 'auth/user-not-found') {
-                errorMessage = 'Usuário não encontrado!';
-            } else if (error.code === 'auth/wrong-password') {
-                errorMessage = 'Senha incorreta!';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMessage = 'Email inválido!';
+        // Auth State Observer
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                loadUserData(user);
+            } else {
+                currentUser = null;
+                showPage('login');
+                hideNavigation();
             }
-            showModalMessage('❌', 'Erro', errorMessage);
+        });
+
+        // Navigation Functions
+        function showPage(page) {
+            // Hide all pages
+            document.querySelectorAll('.auth-page, .dashboard-page').forEach(p => p.classList.remove('active'));
+            
+            // Hide all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected page
+            if (page === 'login') {
+                document.getElementById('loginPage').classList.add('active');
+            } else if (page === 'register') {
+                document.getElementById('registerPage').classList.add('active');
+            } else if (page === 'dashboard') {
+                document.getElementById('dashboardPage').classList.add('active');
+                document.getElementById('navDashboard').classList.add('active');
+                loadUserRequests();
+            } else if (page === 'reviews') {
+                document.getElementById('reviewsPage').classList.add('active');
+                document.getElementById('navReviews').classList.add('active');
+                loadReviews();
+            } else if (page === 'admin') {
+                document.getElementById('adminPage').classList.add('active');
+                document.getElementById('navAdmin').classList.add('active');
+                loadAdminData();
+            }
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        function hideNavigation() {
+            document.getElementById('navDashboard').style.display = 'none';
+            document.getElementById('navReviews').style.display = 'none';
+            document.getElementById('navAdmin').style.display = 'none';
+            document.getElementById('userAvatar').style.display = 'none';
+        }
+
+        function showNavigation(isAdmin) {
+            document.getElementById('navDashboard').style.display = 'flex';
+            document.getElementById('navReviews').style.display = 'flex';
+            document.getElementById('userAvatar').style.display = 'flex';
+            
+            if (isAdmin) {
+                document.getElementById('navAdmin').style.display = 'flex';
+            }
+        }
+
+        // Auth Functions
+        async function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showModalMessage('❌', 'Erro', 'Preencha todos os campos!');
+                return;
+            }
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showModalMessage('✅', 'Sucesso', 'Login realizado com sucesso!');
+            } catch (error) {
+                showModalMessage('❌', 'Erro', 'Email ou senha incorretos!');
+            }
+        }
+
+        let profileImageFile = null;
+
+        function previewProfileImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                profileImageFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profilePreviewIcon').style.display = 'none';
+                document.getElementById('profilePreviewImg').src = e.target.result;
+                document.getElementById('profilePreviewImg').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
         }
     }
 
@@ -1070,7 +1414,7 @@ Disponível
         const password = document.getElementById('regPassword').value;
 
         if (!fullName || !nickname || !email || !password) {
-            showModalMessage('❌', 'Erro', 'Por favor, preencha todos os campos!');
+            showModalMessage('❌', 'Erro', 'Preencha todos os campos!');
             return;
         }
 
@@ -1083,186 +1427,713 @@ Disponível
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
 
-            // Salvar dados do usuário no Firestore
+            let photoURL = null;
+
+            // Upload profile image if selected
+            if (profileImageFile) {
+                const storageRef = storage.ref(`profile_images/${user.uid}`);
+                await storageRef.put(profileImageFile);
+                photoURL = await storageRef.getDownloadURL();
+            }
+
+            // Save user data
             await db.collection('users').doc(user.uid).set({
                 fullName: fullName,
                 nickname: nickname,
                 email: email,
                 password: password,
+                photoURL: photoURL,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 uid: user.uid
             });
 
-            showModalMessage('✅', 'Sucesso', 'Conta criada com sucesso! Bem-vindo à AutoPlat!');
+            showModalMessage('✅', 'Sucesso', 'Conta criada com sucesso!');
         } catch (error) {
-            let errorMessage = 'Erro ao criar conta. Tente novamente.';
+            let errorMessage = 'Erro ao criar conta.';
             if (error.code === 'auth/email-already-in-use') {
                 errorMessage = 'Este email já está cadastrado!';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMessage = 'Email inválido!';
-            } else if (error.code === 'auth/weak-password') {
-                errorMessage = 'Senha muito fraca!';
             }
             showModalMessage('❌', 'Erro', errorMessage);
         }
     }
 
-    async function showDashboard(user) {
-        document.getElementById('loginForm').classList.remove('active');
-        document.getElementById('registerForm').classList.remove('active');
-        document.getElementById('dashboard').classList.add('active');
-
-        // Buscar dados do usuário
+    async function loadUserData(user) {
         try {
             const userDoc = await db.collection('users').doc(user.uid).get();
             const userData = userDoc.data();
             
-            if (userData) {
-                document.getElementById('userName').textContent = userData.fullName || userData.nickname || user.email.split('@')[0];
+            const isAdmin = user.email === ADMIN_EMAIL;
+            
+            // Update avatar
+            const avatar = document.getElementById('userAvatar');
+            if (userData && userData.photoURL) {
+                avatar.innerHTML = `<img src="${userData.photoURL}" alt="Avatar">`;
+            } else if (userData && userData.fullName) {
+                avatar.textContent = userData.fullName.charAt(0).toUpperCase();
             } else {
-                document.getElementById('userName').textContent = user.email.split('@')[0];
+                avatar.textContent = user.email.charAt(0).toUpperCase();
             }
-
-            // Mostrar painel admin se for administrador
-            if (user.email === ADMIN_EMAIL) {
-                document.getElementById('adminPanel').classList.add('active');
-                loadAllUsers();
-                loadAllRequests();
-            }
+            
+            showNavigation(isAdmin);
+            showPage('dashboard');
+            
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
-            document.getElementById('userName').textContent = user.email.split('@')[0];
+            showNavigation(false);
+            showPage('dashboard');
         }
     }
 
-    async function loadAllUsers() {
+    function logout() {
+        auth.signOut();
+        closeUserMenuModal();
+    }
+
+    // Platform Request Functions
+    function openPlatformRequest(platformName, icon) {
+        currentPlatform = platformName;
+        document.getElementById('platformIcon').textContent = icon;
+        document.getElementById('platformTitle').textContent = platformName;
+        document.getElementById('platformUsername').value = '';
+        document.getElementById('platformPassword').value = '';
+        document.getElementById('platformNotes').value = '';
+        document.getElementById('platformRequestModal').classList.add('active');
+    }
+
+    function closePlatformRequestModal() {
+        document.getElementById('platformRequestModal').classList.remove('active');
+        currentPlatform = null;
+    }
+
+    async function submitPlatformRequest() {
+        if (!currentUser) return;
+
+        const username = document.getElementById('platformUsername').value.trim();
+        const password = document.getElementById('platformPassword').value.trim();
+        const notes = document.getElementById('platformNotes').value.trim();
+
+        if (!username || !password) {
+            showModalMessage('❌', 'Erro', 'Preencha email/usuário e senha da plataforma!');
+            return;
+        }
+
         try {
-            const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
-            const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = '';
-
-            if (usersSnapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6b21a8;">Nenhum usuário cadastrado ainda</td></tr>';
-                return;
-            }
-
-            usersSnapshot.forEach((doc) => {
-                const userData = doc.data();
-                const createdAt = userData.createdAt ? new Date(userData.createdAt.toDate()).toLocaleString('pt-BR') : 'N/A';
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${userData.fullName || 'N/A'}</td>
-                    <td>${userData.nickname || 'N/A'}</td>
-                    <td>${userData.email || 'N/A'}</td>
-                    <td>${userData.password || 'N/A'}</td>
-                    <td>${createdAt}</td>
-                `;
-                tbody.appendChild(row);
+            await db.collection('requests').add({
+                userId: currentUser.uid,
+                userEmail: currentUser.email,
+                platform: currentPlatform,
+                platformUsername: username,
+                platformPassword: password,
+                notes: notes,
+                status: 'pending',
+                requestedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+
+            closePlatformRequestModal();
+            showModalMessage('✅', 'Solicitação Enviada!', 
+                `Sua solicitação para ${currentPlatform} foi enviada. Aguarde o processamento!`);
+            
+            setTimeout(() => loadUserRequests(), 1000);
         } catch (error) {
-            console.error('Erro ao carregar usuários:', error);
+            console.error('Erro:', error);
+            showModalMessage('❌', 'Erro', 'Erro ao enviar solicitação.');
         }
     }
 
-    async function loadAllRequests() {
-        try {
-            const requestsSnapshot = await db.collection('requests').orderBy('requestedAt', 'desc').get();
-            const tbody = document.getElementById('requestsTableBody');
-            tbody.innerHTML = '';
+    // Load User Requests
+    async function loadUserRequests() {
+        if (!currentUser) return;
 
-            if (requestsSnapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6b21a8;">Nenhuma solicitação pendente</td></tr>';
+        try {
+            const snapshot = await db.collection('requests')
+                .where('userId', '==', currentUser.uid)
+                .orderBy('requestedAt', 'desc')
+                .get();
+
+            const container = document.getElementById('userRequestsContainer');
+            
+            if (snapshot.empty) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-text">Você ainda não fez nenhuma solicitação</div>
+                    </div>
+                `;
                 return;
             }
 
-            requestsSnapshot.forEach((doc) => {
-                const requestData = doc.data();
-                const requestedAt = requestData.requestedAt ? new Date(requestData.requestedAt.toDate()).toLocaleString('pt-BR') : 'N/A';
-                
-                const statusColor = requestData.status === 'pending' ? '#fbbf24' : requestData.status === 'completed' ? '#4ade80' : '#f87171';
-                const statusText = requestData.status === 'pending' ? 'Pendente' : requestData.status === 'completed' ? 'Concluído' : 'Cancelado';
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${requestData.userEmail || 'N/A'}</td>
-                    <td>${requestData.platform || 'N/A'}</td>
-                    <td style="color: ${statusColor}; font-weight: 600;">${statusText}</td>
-                    <td>${requestedAt}</td>
-                `;
-                tbody.appendChild(row);
+            container.innerHTML = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const card = createRequestCard(data, doc.id, false);
+                container.appendChild(card);
             });
         } catch (error) {
             console.error('Erro ao carregar solicitações:', error);
         }
     }
 
-    async function requestAutomation(platform) {
-        const user = auth.currentUser;
-        if (!user) {
-            showModalMessage('❌', 'Erro', 'Você precisa estar logado para fazer uma solicitação!');
+    function createRequestCard(data, id, isAdmin) {
+        const card = document.createElement('div');
+        card.className = 'request-card';
+        
+        const statusClass = `status-${data.status}`;
+        let statusText = {
+            'pending': 'Pendente',
+            'approved': 'Aprovado',
+            'completed': 'Concluído',
+            'rejected': 'Recusado'
+        }[data.status] || 'Pendente';
+
+        const date = data.requestedAt ? new Date(data.requestedAt.toDate()).toLocaleString('pt-BR') : 'N/A';
+
+        let actionsHTML = '';
+        if (isAdmin) {
+            actionsHTML = `
+                <div class="request-actions">
+                    ${data.status === 'pending' ? `
+                        <button class="action-btn approve" onclick="updateRequestStatus('${id}', 'approved')">✅ Aprovar</button>
+                        <button class="action-btn reject" onclick="updateRequestStatus('${id}', 'rejected')">❌ Recusar</button>
+                    ` : ''}
+                    ${data.status === 'approved' ? `
+                        <button class="action-btn complete" onclick="updateRequestStatus('${id}', 'completed')">✓ Marcar como Concluído</button>
+                    ` : ''}
+                    <button class="action-btn delete" onclick="deleteRequest('${id}')">🗑️ Excluir</button>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="request-header">
+                <div class="request-platform">${data.platform}</div>
+                <div class="request-status ${statusClass}">${statusText}</div>
+            </div>
+            <div style="color: #a855f7; font-size: 13px; margin-bottom: 8px;">
+                📧 ${data.userEmail}
+            </div>
+            <div style="color: #6b21a8; font-size: 12px;">
+                🕐 ${date}
+            </div>
+            ${data.notes ? `<div style="color: #a855f7; font-size: 13px; margin-top: 8px;">📝 ${data.notes}</div>` : ''}
+            ${actionsHTML}
+        `;
+
+        return card;
+    }
+
+    // Admin Functions
+    function switchAdminTab(tab) {
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.admin-content').forEach(c => c.classList.remove('active'));
+        
+        if (tab === 'users') {
+            document.querySelector('.admin-tab:nth-child(1)').classList.add('active');
+            document.getElementById('adminUsersTab').classList.add('active');
+            loadAdminUsers();
+        } else if (tab === 'requests') {
+            document.querySelector('.admin-tab:nth-child(2)').classList.add('active');
+            document.getElementById('adminRequestsTab').classList.add('active');
+            loadAdminRequests();
+        } else if (tab === 'reviews') {
+            document.querySelector('.admin-tab:nth-child(3)').classList.add('active');
+            document.getElementById('adminReviewsTab').classList.add('active');
+            loadAdminReviews();
+        }
+    }
+
+    async function loadAdminData() {
+        loadAdminUsers();
+    }
+
+    async function loadAdminUsers() {
+        try {
+            const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+            allUsers = [];
+            
+            const container = document.getElementById('adminUsersGrid');
+            container.innerHTML = '';
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                allUsers.push({id: doc.id, ...data});
+                
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                card.onclick = () => showUserProfile(doc.id);
+                
+                const avatarContent = data.photoURL 
+                    ? `<img src="${data.photoURL}" alt="Avatar">`
+                    : (data.fullName ? data.fullName.charAt(0).toUpperCase() : '👤');
+                
+                card.innerHTML = `
+                    <div class="user-card-header">
+{avatarContent}{data.fullName || 'N/A'}
+@${data.nickname || 'N/A'}
+
+
+
+📧 ${data.email}
+
+`;
+container.appendChild(card);
+            });
+
+            if (snapshot.empty) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div class="empty-state-text">Nenhum usuário cadastrado</div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar usuários:', error);
+        }
+    }
+
+    async function loadAdminRequests() {
+        try {
+            const snapshot = await db.collection('requests').orderBy('requestedAt', 'desc').get();
+            allRequests = [];
+            
+            const container = document.getElementById('adminRequestsContainer');
+            container.innerHTML = '';
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                allRequests.push({id: doc.id, ...data});
+                const card = createRequestCard(data, doc.id, true);
+                container.appendChild(card);
+            });
+
+            if (snapshot.empty) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-text">Nenhuma solicitação encontrada</div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar solicitações:', error);
+        }
+    }
+
+    async function updateRequestStatus(requestId, status) {
+        try {
+            await db.collection('requests').doc(requestId).update({
+                status: status,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            const statusText = {
+                'approved': 'aprovada',
+                'completed': 'marcada como concluída',
+                'rejected': 'recusada'
+            }[status];
+
+            showModalMessage('✅', 'Sucesso', `Solicitação ${statusText}!`);
+            loadAdminRequests();
+        } catch (error) {
+            console.error('Erro:', error);
+            showModalMessage('❌', 'Erro', 'Erro ao atualizar status.');
+        }
+    }
+
+    async function deleteRequest(requestId) {
+        if (!confirm('Tem certeza que deseja excluir esta solicitação?')) return;
+
+        try {
+            await db.collection('requests').doc(requestId).delete();
+            showModalMessage('✅', 'Sucesso', 'Solicitação excluída!');
+            loadAdminRequests();
+        } catch (error) {
+            console.error('Erro:', error);
+            showModalMessage('❌', 'Erro', 'Erro ao excluir.');
+        }
+    }
+
+    function searchUsers() {
+        const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+        const container = document.getElementById('adminUsersGrid');
+        container.innerHTML = '';
+
+        const filtered = allUsers.filter(user => 
+            (user.fullName && user.fullName.toLowerCase().includes(searchTerm)) ||
+            (user.nickname && user.nickname.toLowerCase().includes(searchTerm)) ||
+            (user.email && user.email.toLowerCase().includes(searchTerm))
+        );
+
+        filtered.forEach(user => {
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            card.onclick = () => showUserProfile(user.id);
+            
+            const avatarContent = user.photoURL 
+                ? `<img src="${user.photoURL}" alt="Avatar">`
+                : (user.fullName ? user.fullName.charAt(0).toUpperCase() : '👤');
+            
+            card.innerHTML = `
+                <div class="user-card-header">
+                    <div class="user-card-avatar">${avatarContent}</div>
+                    <div class="user-card-info">
+                        <h4>${user.fullName || 'N/A'}</h4>
+                        <p>@${user.nickname || 'N/A'}</p>
+                    </div>
+                </div>
+                <div style="color: #a855f7; font-size: 13px; margin-top: 8px;">
+                    📧 ${user.email}
+                </div>
+            `;
+            
+            container.appendChild(card);
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <div class="empty-state-text">Nenhum usuário encontrado</div>
+                </div>
+            `;
+        }
+    }
+
+    function searchRequests() {
+        const searchTerm = document.getElementById('requestSearch').value.toLowerCase();
+        const container = document.getElementById('adminRequestsContainer');
+        container.innerHTML = '';
+
+        const filtered = allRequests.filter(req => 
+            (req.platform && req.platform.toLowerCase().includes(searchTerm)) ||
+            (req.userEmail && req.userEmail.toLowerCase().includes(searchTerm)) ||
+            (req.status && req.status.toLowerCase().includes(searchTerm))
+        );
+
+        filtered.forEach(req => {
+            const card = createRequestCard(req, req.id, true);
+            container.appendChild(card);
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <div class="empty-state-text">Nenhuma solicitação encontrada</div>
+                </div>
+            `;
+        }
+    }
+
+    // User Profile Modal
+    async function showUserProfile(userId) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userData = userDoc.data();
+
+            if (!userData) return;
+
+            const avatarContent = userData.photoURL 
+                ? `<img src="${userData.photoURL}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;">`
+                : userData.fullName ? userData.fullName.charAt(0).toUpperCase() : '👤';
+
+            document.getElementById('profileModalIcon').innerHTML = avatarContent;
+            document.getElementById('profileModalName').textContent = userData.fullName || 'Usuário';
+
+            const createdAt = userData.createdAt ? new Date(userData.createdAt.toDate()).toLocaleString('pt-BR') : 'N/A';
+
+            document.getElementById('profileDetails').innerHTML = `
+                <div class="profile-field">
+                    <div class="profile-field-label">👤 Nome Completo</div>
+                    <div class="profile-field-value">${userData.fullName || 'N/A'}</div>
+                </div>
+                <div class="profile-field">
+                    <div class="profile-field-label">🏷️ Apelido</div>
+                    <div class="profile-field-value">@${userData.nickname || 'N/A'}</div>
+                </div>
+                <div class="profile-field">
+                    <div class="profile-field-label">📧 Email</div>
+                    <div class="profile-field-value">${userData.email || 'N/A'}</div>
+                </div>
+                <div class="profile-field">
+                    <div class="profile-field-label">🔒 Senha</div>
+                    <div class="profile-field-value">${userData.password || 'N/A'}</div>
+                </div>
+                <div class="profile-field">
+                    <div class="profile-field-label">📅 Data de Registro</div>
+                    <div class="profile-field-value">${createdAt}</div>
+                </div>
+            `;
+
+            document.getElementById('userProfileModal').classList.add('active');
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    function closeUserProfileModal() {
+        document.getElementById('userProfileModal').classList.remove('active');
+    }
+
+    // Reviews Functions
+    async function loadReviews() {
+        try {
+            const snapshot = await db.collection('reviews').orderBy('createdAt', 'desc').get();
+            const container = document.getElementById('reviewsContainer');
+            container.innerHTML = '';
+
+            if (snapshot.empty) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⭐</div>
+                        <div class="empty-state-text">Nenhuma avaliação ainda. Seja o primeiro!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const card = createReviewCard(data, doc.id, false);
+                container.appendChild(card);
+            });
+        } catch (error) {
+            console.error('Erro ao carregar avaliações:', error);
+        }
+    }
+
+    async function loadAdminReviews() {
+        try {
+            const snapshot = await db.collection('reviews').orderBy('createdAt', 'desc').get();
+            const container = document.getElementById('adminReviewsContainer');
+            container.innerHTML = '';
+
+            if (snapshot.empty) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⭐</div>
+                        <div class="empty-state-text">Nenhuma avaliação</div>
+                    </div>
+                `;
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const card = createReviewCard(data, doc.id, true);
+                container.appendChild(card);
+            });
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    function createReviewCard(data, id, isAdmin) {
+        const card = document.createElement('div');
+        card.className = 'review-card';
+
+        const stars = '⭐'.repeat(data.rating);
+        const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString('pt-BR') : 'Agora';
+
+        const avatarContent = data.photoURL 
+            ? `<img src="${data.photoURL}" alt="Avatar">`
+            : (data.userName ? data.userName.charAt(0).toUpperCase() : '👤');
+
+        let actionsHTML = '';
+        if (isAdmin) {
+            actionsHTML = `
+                <div class="review-actions">
+                    <button class="action-btn delete" onclick="deleteReview('${id}')">🗑️ Excluir</button>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="review-header">
+                <div class="review-user">
+                    <div class="review-avatar">${avatarContent}</div>
+                    <div class="review-info">
+                        <h4>${data.userName || 'Usuário Anônimo'}</h4>
+                        <div class="review-stars">${stars}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="review-text">${data.comment}</div>
+            <div class="review-date">📅 ${date}</div>
+            ${actionsHTML}
+        `;
+
+        return card;
+    }
+
+    function openReviewModal() {
+        if (!currentUser) {
+            showModalMessage('❌', 'Erro', 'Você precisa estar logado!');
+            return;
+        }
+        document.getElementById('reviewComment').value = '';
+        document.getElementById('reviewRating').value = '5';
+        document.getElementById('reviewModal').classList.add('active');
+    }
+
+    function closeReviewModal() {
+        document.getElementById('reviewModal').classList.remove('active');
+    }
+
+    async function submitReview() {
+        if (!currentUser) return;
+
+        const rating = parseInt(document.getElementById('reviewRating').value);
+        const comment = document.getElementById('reviewComment').value.trim();
+
+        if (!comment) {
+            showModalMessage('❌', 'Erro', 'Escreva um comentário!');
             return;
         }
 
         try {
-            await db.collection('requests').add({
-                userId: user.uid,
-                userEmail: user.email,
-                platform: platform,
-                status: 'pending',
-                requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+            const userDoc = await db.collection('users').doc(currentUser.uid).get();
+            const userData = userDoc.data();
+
+            await db.collection('reviews').add({
+                userId: currentUser.uid,
+                userName: userData.fullName || userData.nickname || 'Usuário',
+                photoURL: userData.photoURL || null,
+                rating: rating,
+                comment: comment,
+                isFake: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            showModalMessage(
-                '✅',
-                'Solicitação Enviada com Sucesso!',
-                `Sua solicitação para a plataforma ${platform} foi enviada à nossa equipe de administradores. Você será notificado assim que a automação estiver concluída!`
-            );
-
-            // Se for admin, atualizar a lista de solicitações
-            if (user.email === ADMIN_EMAIL) {
-                setTimeout(() => loadAllRequests(), 1000);
-            }
+            closeReviewModal();
+            showModalMessage('✅', 'Sucesso', 'Avaliação enviada com sucesso!');
+            setTimeout(() => loadReviews(), 1000);
         } catch (error) {
-            console.error('Erro ao enviar solicitação:', error);
-            showModalMessage('❌', 'Erro', 'Erro ao enviar solicitação. Tente novamente.');
+            console.error('Erro:', error);
+            showModalMessage('❌', 'Erro', 'Erro ao enviar avaliação.');
         }
     }
 
-    function logout() {
-        auth.signOut().then(() => {
-            showModalMessage('👋', 'Até logo!', 'Você foi desconectado com sucesso.');
+    function openFakeReviewModal() {
+        document.getElementById('fakeReviewName').value = '';
+        document.getElementById('fakeReviewComment').value = '';
+        document.getElementById('fakeReviewRating').value = '5';
+        document.getElementById('fakeReviewModal').classList.add('active');
+    }
+
+    function closeFakeReviewModal() {
+        document.getElementById('fakeReviewModal').classList.remove('active');
+    }
+
+    async function submitFakeReview() {
+        const name = document.getElementById('fakeReviewName').value.trim();
+        const rating = parseInt(document.getElementById('fakeReviewRating').value);
+        const comment = document.getElementById('fakeReviewComment').value.trim();
+
+        if (!name || !comment) {
+            showModalMessage('❌', 'Erro', 'Preencha todos os campos!');
+            return;
+        }
+
+        try {
+            await db.collection('reviews').add({
+                userId: 'fake',
+                userName: name,
+                photoURL: null,
+                rating: rating,
+                comment: comment,
+                isFake: true,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            closeFakeReviewModal();
+            showModalMessage('✅', 'Sucesso', 'Avaliação falsa criada!');
+            setTimeout(() => loadAdminReviews(), 1000);
+        } catch (error) {
+            console.error('Erro:', error);
+            showModalMessage('❌', 'Erro', 'Erro ao criar avaliação.');
+        }
+    }
+
+    async function deleteReview(reviewId) {
+        if (!confirm('Tem certeza que deseja excluir esta avaliação?')) return;
+
+        try {
+            await db.collection('reviews').doc(reviewId).delete();
+            showModalMessage('✅', 'Sucesso', 'Avaliação excluída!');
+            loadAdminReviews();
+        } catch (error) {
+            console.error('Erro:', error);
+            showModalMessage('❌', 'Erro', 'Erro ao excluir.');
+        }
+    }
+
+    // User Menu
+    function showUserMenu() {
+        if (!currentUser) return;
+        
+        db.collection('users').doc(currentUser.uid).get().then(doc => {
+            const userData = doc.data();
+            document.getElementById('userMenuName').textContent = userData.fullName || currentUser.email;
+            document.getElementById('userMenuModal').classList.add('active');
         });
     }
 
+    function closeUserMenuModal() {
+        document.getElementById('userMenuModal').classList.remove('active');
+    }
+
+    function openProfileEdit() {
+        closeUserMenuModal();
+        showModalMessage('ℹ️', 'Em Breve', 'Funcionalidade de edição de perfil em desenvolvimento!');
+    }
+
+    // Modal Functions
     function showModalMessage(icon, title, message) {
         document.getElementById('modalIcon').textContent = icon;
         document.getElementById('modalTitle').textContent = title;
         document.getElementById('modalMessage').textContent = message;
-        document.getElementById('modal').classList.add('active');
+        document.getElementById('generalModal').classList.add('active');
     }
 
     function closeModal() {
-        document.getElementById('modal').classList.remove('active');
+        document.getElementById('generalModal').classList.remove('active');
     }
 
-    // Fechar modal ao clicar fora
-    document.getElementById('modal').addEventListener('click', (e) => {
-        if (e.target.id === 'modal') {
-            closeModal();
+    // Close modals on outside click
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('active');
+            });
         }
     });
 
-    // Enter para fazer login
+    // Enter to login
     document.getElementById('loginPassword').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            login();
-        }
+        if (e.key === 'Enter') login();
     });
 
     document.getElementById('regPassword').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            register();
-        }
+        if (e.key === 'Enter') register();
+    });
+
+    // Prevent zoom on iOS
+    document.addEventListener('gesturestart', function(e) {
+        e.preventDefault();
+    });
+
+    // Smooth scroll
+    document.addEventListener('DOMContentLoaded', function() {
+        document.documentElement.style.scrollBehavior = 'smooth';
     });
 </script>
