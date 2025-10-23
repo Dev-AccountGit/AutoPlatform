@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="logo.png">
 </head>
 <body>
     <!-- Terms Modal -->
@@ -27,11 +28,9 @@
                     <br>
                     <p>📝 <strong>DADOS VERÍDICOS:</strong> Você deve fornecer informações reais e precisas. Contas com dados incorretos serão <strong>BLOQUEADAS E EXCLUÍDAS</strong> permanentemente.</p>
                     <br>
-                    <p>⏳ <strong>PRAZOS:</strong> O processamento pode demorar devido à alta demanda. Nossa equipe é pequena e trabalha manualmente em cada solicitação.</p>
+                    <p>⏳ <strong>APROVAÇÃO DA CONTA:</strong> Sua conta precisa ser aprovada por um administrador antes de fazer solicitações.</p>
                     <br>
                     <p>🛡️ <strong>SEGURANÇA:</strong> Suas credenciais são criptografadas e armazenadas com segurança. Apenas administradores autorizados têm acesso.</p>
-                    <br>
-                    <p>🚫 <strong>PROIBIÇÕES:</strong> É proibido solicitar automações para atividades ilegais ou que violem os termos das plataformas educacionais.</p>
                 </div>
                 
                 <div class="terms-checkbox">
@@ -43,10 +42,21 @@
         </div>
     </div>
 
+    <!-- Notification System -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <!-- Account Pending Banner -->
+    <div class="pending-banner" id="pendingBanner" style="display: none;">
+        <div class="pending-content">
+            <span class="pending-icon">⏳</span>
+            <span class="pending-text">Sua conta está aguardando aprovação dos administradores. Você poderá fazer solicitações assim que for aprovado.</span>
+        </div>
+    </div>
+
     <!-- Top Navigation -->
     <nav class="top-nav">
         <div class="nav-logo">
-            <span class="nav-logo-icon">🚀</span>
+            <img src="logo.png" alt="AutoPlat Logo" class="nav-logo-img" onerror="this.style.display='none'">
             <span>AutoPlat</span>
         </div>
         <div class="nav-menu">
@@ -74,6 +84,7 @@
         <div class="auth-page active" id="loginPage">
             <div class="auth-card">
                 <div class="auth-header">
+                    <img src="logo.png" alt="AutoPlat Logo" class="auth-logo" onerror="this.style.display='none'">
                     <div class="auth-icon">🔐</div>
                     <h2 class="auth-title">Bem-vindo de volta</h2>
                     <p class="auth-subtitle">Entre para acessar a plataforma</p>
@@ -100,6 +111,7 @@
         <div class="auth-page" id="registerPage">
             <div class="auth-card">
                 <div class="auth-header">
+                    <img src="logo.png" alt="AutoPlat Logo" class="auth-logo" onerror="this.style.display='none'">
                     <div class="auth-icon">✨</div>
                     <h2 class="auth-title">Criar Conta</h2>
                     <p class="auth-subtitle">Junte-se à nossa comunidade</p>
@@ -147,7 +159,7 @@
             <div class="welcome-banner">
                 <div class="welcome-content">
                     <h2>👋 Bem-vindo, <span id="welcomeUserName">Usuário</span>!</h2>
-                    <p>Solicite automações para suas plataformas educacionais</p>
+                    <p id="welcomeStatus">Carregando status da conta...</p>
                 </div>
                 <div class="welcome-stats">
                     <div class="stat-card">
@@ -281,6 +293,7 @@
                     <div class="admin-tab active" onclick="switchAdminTab('users')">👥 Usuários</div>
                     <div class="admin-tab" onclick="switchAdminTab('requests')">📋 Solicitações</div>
                     <div class="admin-tab" onclick="switchAdminTab('reviews')">⭐ Avaliações</div>
+                    <div class="admin-tab" onclick="switchAdminTab('notifications')">📢 Notificações</div>
                     <div class="admin-tab" onclick="switchAdminTab('analytics')">📊 Analytics</div>
                 </div>
 
@@ -322,6 +335,31 @@
                     </div>
                     <div class="reviews-container" id="adminReviewsContainer">
                         <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Notifications Tab -->
+                <div class="admin-content" id="adminNotificationsTab">
+                    <div class="notification-management">
+                        <h3 style="margin-bottom: 20px; color: #c084fc;">Enviar Notificação Global</h3>
+                        <div class="input-group">
+                            <label>Título da Notificação</label>
+                            <input type="text" id="notificationTitle" placeholder="Título importante...">
+                        </div>
+                        <div class="input-group">
+                            <label>Mensagem</label>
+                            <textarea class="form-textarea" id="notificationMessage" placeholder="Digite a mensagem para todos os usuários..." rows="4"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Tipo de Notificação</label>
+                            <select id="notificationType" style="width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 14px; color: #ffffff;">
+                                <option value="info">ℹ️ Informativa</option>
+                                <option value="warning">⚠️ Aviso</option>
+                                <option value="success">✅ Sucesso</option>
+                                <option value="error">❌ Erro</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="sendGlobalNotification()">📢 Enviar para Todos os Usuários</button>
                     </div>
                 </div>
 
@@ -369,16 +407,6 @@
             <h3 class="modal-title" id="modalTitle">Título</h3>
             <p class="modal-message" id="modalMessage">Mensagem</p>
             <button class="btn" onclick="closeModal()">Entendi</button>
-        </div>
-    </div>
-
-    <!-- User Profile Modal -->
-    <div class="modal" id="userProfileModal">
-        <div class="modal-content profile-modal-content">
-            <div class="modal-icon" id="profileModalIcon">👤</div>
-            <h3 class="modal-title" id="profileModalName">Nome do Usuário</h3>
-            <div class="profile-details" id="profileDetails"></div>
-            <button class="btn" onclick="closeUserProfileModal()">Fechar</button>
         </div>
     </div>
 
@@ -510,4 +538,4 @@
 
     <script src="app.js"></script>
 </body>
-    </html>
+</html>
