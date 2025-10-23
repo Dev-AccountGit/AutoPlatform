@@ -1141,4 +1141,4 @@ body::before {
 
 ::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(135deg, #7e22ce 0%, #6b21a8 100%);
-}
+    }
