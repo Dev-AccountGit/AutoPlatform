@@ -5,11 +5,17 @@ const firebaseConfig = {
     projectId: "autoplataform",
     storageBucket: "autoplataform.firebasestorage.app",
     messagingSenderId: "458879356981",
-    appId: "1:458879356981:web:b9e0ac11d33ebaea37617c"
+    appId: "1:458879356981:web:b9e0ac11d33ebaea37617c",
+    measurementId: "G-EHJYC6S9NP"
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+try {
+    firebase.initializeApp(firebaseConfig);
+    console.log('🔥 Firebase inicializado com sucesso!');
+} catch (error) {
+    console.log('⚠️ Firebase já inicializado:', error);
+}
 
 // Firebase Services
 const auth = firebase.auth();
@@ -22,82 +28,221 @@ let currentUserData = null;
 let currentPlatform = null;
 let allUsers = [];
 let allRequests = [];
+let realTimeListeners = [];
+let isFullscreen = false;
 
 // Admin Email
 const ADMIN_EMAIL = 'dev.git.tdc@gmail.com';
 
+// Platform Data
+const PLATFORMS = [
+    {
+        name: 'Quizizz',
+        icon: '📝',
+        description: 'Sistema completo de automação para quizzes e avaliações gamificadas.',
+        features: ['Quizzes', 'Avaliações', 'Gamificação'],
+        badge: '⚡'
+    },
+    {
+        name: 'Wayground',
+        icon: '🌐',
+        description: 'Automação avançada para cursos, módulos e trilhas de aprendizado.',
+        features: ['Cursos', 'Módulos', 'Progresso'],
+        badge: '⚡'
+    },
+    {
+        name: 'Redação Paraná',
+        icon: '✍️',
+        description: 'Solução completa para produção e correção de redações ENEM.',
+        features: ['ENEM', 'Vestibular', 'Correção'],
+        badge: '⚡'
+    },
+    {
+        name: 'Khan Academy',
+        icon: '🎓',
+        description: 'Automação para exercícios e atividades de aprendizado em matemática e ciências.',
+        features: ['Matemática', 'Ciências', 'Exercícios'],
+        badge: '⚡'
+    },
+    {
+        name: 'Inglês Paraná',
+        icon: '🗣️',
+        description: 'Solução premium para aprendizado completo de inglês com listening e speaking.',
+        features: ['Vocabulário', 'Gramática', 'Listening'],
+        badge: '⭐'
+    }
+];
+
 // DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
-    setupEventListeners();
 });
 
+// Initialize Application
 function initializeApp() {
-    const acceptedTerms = localStorage.getItem('acceptedTerms');
-    if (!acceptedTerms) {
-        showTermsModal();
-    } else {
-        checkAuthState();
+    setupCustomCursor();
+    setupEventListeners();
+    startLoadingSequence();
+    detectMobile();
+}
+
+// Setup Custom Cursor
+function setupCustomCursor() {
+    if (window.matchMedia('(pointer: fine)').matches) {
+        const cursor = document.createElement('div');
+        cursor.className = 'custom-cursor';
+        document.body.appendChild(cursor);
+
+        const follower = document.createElement('div');
+        follower.className = 'custom-cursor-follower';
+        document.body.appendChild(follower);
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            setTimeout(() => {
+                follower.style.left = e.clientX + 'px';
+                follower.style.top = e.clientY + 'px';
+            }, 100);
+        });
+
+        document.addEventListener('mousedown', () => {
+            cursor.style.transform = 'scale(0.8)';
+            follower.style.transform = 'scale(1.2)';
+        });
+
+        document.addEventListener('mouseup', () => {
+            cursor.style.transform = 'scale(1)';
+            follower.style.transform = 'scale(1)';
+        });
+
+        // Change cursor on interactive elements
+        const interactiveElements = ['button', 'a', 'input', 'textarea', 'select', '.nav-btn', '.platform-card', '.user-avatar'];
+        interactiveElements.forEach(selector => {
+            document.querySelectorAll(selector).forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    cursor.style.transform = 'scale(1.5)';
+                    follower.style.transform = 'scale(1.5)';
+                });
+                el.addEventListener('mouseleave', () => {
+                    cursor.style.transform = 'scale(1)';
+                    follower.style.transform = 'scale(1)';
+                });
+            });
+        });
     }
 }
 
+// Setup Event Listeners
 function setupEventListeners() {
+    // Terms acceptance
     document.getElementById('acceptTerms').addEventListener('change', function() {
         document.getElementById('acceptTermsBtn').disabled = !this.checked;
     });
     
-    document.getElementById('loginPassword')?.addEventListener('keypress', function(e) {
+    // Enter key for login/register
+    document.getElementById('loginPassword').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') login();
     });
     
-    document.getElementById('regPassword')?.addEventListener('keypress', function(e) {
+    document.getElementById('regPassword').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') register();
     });
 
-    // Listen for notifications
-    setupNotificationListener();
+    // Input validation
+    setupInputValidation();
+
+    // Scroll events
+    window.addEventListener('scroll', handleScroll);
+
+    // Fullscreen change
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 }
 
-function setupNotificationListener() {
-    // Listen for real-time notifications
-    if (isAdmin()) {
-        db.collection('notifications').orderBy('createdAt', 'desc').limit(10)
-            .onSnapshot((snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        const notification = change.doc.data();
-                        showNotification(notification.title, notification.message, notification.type);
-                    }
-                });
-            });
-    }
+// Input Validation
+function setupInputValidation() {
+    const regEmail = document.getElementById('regEmail');
+    const regPassword = document.getElementById('regPassword');
+
+    regEmail.addEventListener('blur', function() {
+        const email = this.value.trim();
+        if (email && !email.endsWith('@escola.pr.gov.br')) {
+            showInputError(this, '⚠️ Use um email @escola.pr.gov.br');
+        } else {
+            clearInputError(this);
+        }
+    });
+
+    regPassword.addEventListener('input', function() {
+        const password = this.value;
+        if (password.length > 0 && password.length < 6) {
+            showInputError(this, '🔒 Mínimo 6 caracteres');
+        } else {
+            clearInputError(this);
+        }
+    });
 }
 
-function showTermsModal() {
-    document.getElementById('termsModal').classList.add('active');
+// Loading Sequence
+function startLoadingSequence() {
+    const loadingSteps = [
+        { text: 'Inicializando sistema...', progress: 20 },
+        { text: 'Carregando configurações...', progress: 40 },
+        { text: 'Conectando ao servidor...', progress: 60 },
+        { text: 'Preparando interface...', progress: 80 },
+        { text: 'Quase pronto...', progress: 95 }
+    ];
+
+    let currentStep = 0;
+    const progressBar = document.getElementById('loadingProgress');
+    const loadingText = document.getElementById('loadingText');
+
+    const interval = setInterval(() => {
+        if (currentStep < loadingSteps.length) {
+            const step = loadingSteps[currentStep];
+            progressBar.style.width = step.progress + '%';
+            loadingText.textContent = step.text;
+            currentStep++;
+        } else {
+            clearInterval(interval);
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('fade-out');
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                    checkAuthState();
+                }, 800);
+            }, 500);
+        }
+    }, 400);
 }
 
-function acceptTerms() {
-    localStorage.setItem('acceptedTerms', 'true');
-    document.getElementById('termsModal').classList.remove('active');
-    checkAuthState();
-}
-
+// Check Authentication State
 function checkAuthState() {
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             currentUser = user;
             await loadUserData();
+            setupRealTimeListeners();
             showPage('dashboard');
             updateNavigation();
             checkPendingBanner();
         } else {
-            showPage('login');
+            const acceptedTerms = localStorage.getItem('acceptedTerms');
+            if (!acceptedTerms) {
+                showTermsModal();
+            } else {
+                showPage('login');
+            }
             updateNavigation();
         }
     });
 }
 
+// Load User Data
 async function loadUserData() {
     if (!currentUser) return;
     
@@ -113,313 +258,272 @@ async function loadUserData() {
             }
             
             loadUserRequests();
-            loadReviews();
+            loadPlatforms();
             checkPendingBanner();
+        } else {
+            await createUserDocument();
         }
     } catch (error) {
-        console.error('Error loading user data:', error);
-        showModal('❌', 'Erro', 'Erro ao carregar dados do usuário.');
+        console.error('❌ Erro ao carregar dados:', error);
+        showNotification('Erro no Sistema', 'Falha ao carregar dados do usuário', 'error');
     }
 }
 
+// Create User Document
+async function createUserDocument() {
+    try {
+        await db.collection('users').doc(currentUser.uid).set({
+            uid: currentUser.uid,
+            fullName: currentUser.displayName || 'Usuário',
+            email: currentUser.email,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            isVerified: false,
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        await loadUserData();
+    } catch (error) {
+        console.error('❌ Erro ao criar documento:', error);
+    }
+}
+
+// Check if User is Admin
 function isAdmin() {
     return currentUser && currentUser.email === ADMIN_EMAIL;
 }
 
+// Update User Interface
 function updateUserInterface() {
     if (currentUserData) {
-        document.getElementById('welcomeUserName').textContent = currentUserData.fullName || 'Usuário';
+        document.getElementById('welcomeUserName').textContent = currentUserData.fullName || 'Agente';
         
         const welcomeStatus = document.getElementById('welcomeStatus');
         if (currentUserData.status === 'pending') {
-            welcomeStatus.innerHTML = '<span class="welcome-status-pending">⏳ Aguardando aprovação da conta</span>';
+            welcomeStatus.innerHTML = '<div class="status-pending">⏳ Conta em análise pela equipe</div>';
         } else if (currentUserData.status === 'verified') {
-            welcomeStatus.innerHTML = '<span class="welcome-status-verified">✅ Conta verificada e ativa</span>';
+            welcomeStatus.innerHTML = '<div class="status-verified">✅ Conta verificada e ativa</div>';
         } else if (currentUserData.status === 'banned') {
-            welcomeStatus.innerHTML = '<span class="welcome-status-banned">❌ Conta suspensa</span>';
+            welcomeStatus.innerHTML = '<div class="status-banned">❌ Conta suspensa</div>';
         }
         
         const userAvatar = document.getElementById('userAvatar');
         if (currentUserData.profileImage) {
-            userAvatar.innerHTML = `<img src="${currentUserData.profileImage}" alt="Profile">`;
+            userAvatar.innerHTML = `<img src="${currentUserData.profileImage}" alt="Profile"><div class="user-status status-online"></div>`;
         } else {
-            userAvatar.textContent = currentUserData.fullName ? currentUserData.fullName.charAt(0).toUpperCase() : '👤';
+            userAvatar.innerHTML = `${currentUserData.fullName ? currentUserData.fullName.charAt(0).toUpperCase() : '👤'}<div class="user-status status-online"></div>`;
         }
     }
 }
 
+// Check Pending Banner
 function checkPendingBanner() {
     const pendingBanner = document.getElementById('pendingBanner');
+    const platformCards = document.querySelectorAll('.platform-card');
+    
     if (currentUserData && currentUserData.status === 'pending') {
         pendingBanner.style.display = 'block';
-        
-        // Disable platform cards for pending users
-        document.querySelectorAll('.platform-card').forEach(card => {
-            if (!card.classList.contains('disabled')) {
-                card.classList.add('disabled');
-                card.onclick = null;
-            }
+        platformCards.forEach(card => {
+            card.style.opacity = '0.6';
+            card.style.cursor = 'not-allowed';
+            card.onclick = null;
         });
     } else {
         pendingBanner.style.display = 'none';
-        
-        // Enable platform cards for verified users
-        document.querySelectorAll('.platform-card').forEach(card => {
-            card.classList.remove('disabled');
-            const platform = card.querySelector('.platform-name').textContent;
-            const icon = card.querySelector('.platform-icon').textContent;
-            card.onclick = () => openPlatformRequest(platform, icon);
+        platformCards.forEach(card => {
+            card.style.opacity = '1';
+            card.style.cursor = 'pointer';
         });
     }
 }
 
+// Update Navigation
 function updateNavigation() {
     const isLoggedIn = !!currentUser;
-    
     document.getElementById('navDashboard').style.display = isLoggedIn ? 'flex' : 'none';
-    document.getElementById('navReviews').style.display = isLoggedIn ? 'flex' : 'none';
+    document.getElementById('navAdmin').style.display = (isLoggedIn && isAdmin()) ? 'flex' : 'none';
     document.getElementById('userAvatar').style.display = isLoggedIn ? 'flex' : 'none';
 }
 
-// Authentication Functions
-async function login() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    
-    if (!email || !password) {
-        showModal('⚠️', 'Campos Vazios', 'Por favor, preencha todos os campos.');
-        return;
-    }
-    
-    try {
-        showLoading(true);
-        await auth.signInWithEmailAndPassword(email, password);
-        showModal('✅', 'Sucesso', 'Login realizado com sucesso!');
-    } catch (error) {
-        console.error('Login error:', error);
-        let errorMessage = 'Erro ao fazer login. ';
-        
-        switch (error.code) {
-            case 'auth/user-not-found':
-                errorMessage += 'Usuário não encontrado.';
-                break;
-            case 'auth/wrong-password':
-                errorMessage += 'Senha incorreta.';
-                break;
-            case 'auth/invalid-email':
-                errorMessage += 'Email inválido.';
-                break;
-            default:
-                errorMessage += 'Tente novamente.';
-        }
-        
-        showModal('❌', 'Erro no Login', errorMessage);
-    } finally {
-        showLoading(false);
-    }
-}
+// Setup Real-time Listeners
+function setupRealTimeListeners() {
+    // Clear existing listeners
+    realTimeListeners.forEach(unsubscribe => unsubscribe());
+    realTimeListeners = [];
 
-async function register() {
-    const fullName = document.getElementById('regFullName').value;
-    const registration = document.getElementById('regRegistration').value;
-    const school = document.getElementById('regSchool').value;
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
-    
-    if (!fullName || !registration || !school || !email || !password) {
-        showModal('⚠️', 'Campos Vazios', 'Por favor, preencha todos os campos.');
-        return;
-    }
-    
-    if (!email.endsWith('@escola.pr.gov.br')) {
-        showModal('❌', 'Email Inválido', 'Você deve usar um email @escola.pr.gov.br');
-        return;
-    }
-    
-    try {
-        showLoading(true);
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        
-        let profileImageUrl = '';
-        const profileImageInput = document.getElementById('profileImageInput');
-        if (profileImageInput.files[0]) {
-            profileImageUrl = await uploadProfileImage(user.uid, profileImageInput.files[0]);
-        }
-        
-        // Create user document with pending status
-        await db.collection('users').doc(user.uid).set({
-            uid: user.uid,
-            fullName: fullName,
-            registration: registration,
-            school: school,
-            email: email,
-            password: password, // Store password for admin view
-            profileImage: profileImageUrl,
-            status: 'pending', // pending, verified, banned
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            isVerified: false
+    // User data listener
+    const userListener = db.collection('users').doc(currentUser.uid)
+        .onSnapshot((doc) => {
+            if (doc.exists) {
+                currentUserData = doc.data();
+                updateUserInterface();
+                checkPendingBanner();
+            }
+        }, (error) => {
+            console.error('❌ Erro no listener do usuário:', error);
         });
+    realTimeListeners.push(userListener);
 
-        // Notify admin about new user
-        await db.collection('adminNotifications').add({
-            type: 'new_user',
-            userId: user.uid,
-            userName: fullName,
-            userEmail: email,
-            message: `Novo usuário registrado: ${fullName} (${email})`,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            read: false
+    // Requests listener
+    const requestsListener = db.collection('requests')
+        .where('userId', '==', currentUser.uid)
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((snapshot) => {
+            loadUserRequests();
+        }, (error) => {
+            console.error('❌ Erro no listener de solicitações:', error);
         });
-        
-        showModal('✅', 'Conta Criada', 
-            'Sua conta foi criada com sucesso! ⏳\n\n' +
-            'Sua conta está aguardando aprovação dos administradores. ' +
-            'Você receberá uma notificação quando for aprovado.'
-        );
-        
-    } catch (error) {
-        console.error('Registration error:', error);
-        let errorMessage = 'Erro ao criar conta. ';
-        
-        switch (error.code) {
-            case 'auth/email-already-in-use':
-                errorMessage += 'Este email já está em uso.';
-                break;
-            case 'auth/weak-password':
-                errorMessage += 'A senha é muito fraca.';
-                break;
-            case 'auth/invalid-email':
-                errorMessage += 'Email inválido.';
-                break;
-            default:
-                errorMessage += 'Tente novamente.';
-        }
-        
-        showModal('❌', 'Erro no Cadastro', errorMessage);
-    } finally {
-        showLoading(false);
+    realTimeListeners.push(requestsListener);
+
+    // Notifications listener
+    const notificationsListener = db.collection('notifications')
+        .where('userId', '==', currentUser.uid)
+        .where('read', '==', false)
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const notification = change.doc.data();
+                    showNotification(notification.title, notification.message, notification.type);
+                    // Mark as read
+                    db.collection('notifications').doc(change.doc.id).update({ read: true });
+                }
+            });
+        }, (error) => {
+            console.error('❌ Erro no listener de notificações:', error);
+        });
+    realTimeListeners.push(notificationsListener);
+
+    // Admin listeners
+    if (isAdmin()) {
+        const adminUsersListener = db.collection('users')
+            .onSnapshot((snapshot) => {
+                loadAdminUsers();
+            });
+        realTimeListeners.push(adminUsersListener);
+
+        const adminRequestsListener = db.collection('requests')
+            .onSnapshot((snapshot) => {
+                loadAdminRequests();
+            });
+        realTimeListeners.push(adminRequestsListener);
     }
 }
 
-async function uploadProfileImage(userId, file) {
-    try {
-        const storageRef = storage.ref();
-        const imageRef = storageRef.child(`profileImages/${userId}/${file.name}`);
-        await imageRef.put(file);
-        return await imageRef.getDownloadURL();
-    } catch (error) {
-        console.error('Error uploading profile image:', error);
-        return '';
-    }
+// Show Terms Modal
+function showTermsModal() {
+    document.getElementById('termsModal').classList.add('active');
 }
 
-function previewProfileImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('profilePreviewImg').src = e.target.result;
-            document.getElementById('profilePreviewImg').style.display = 'block';
-            document.getElementById('profilePreviewIcon').style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    }
+// Accept Terms
+function acceptTerms() {
+    localStorage.setItem('acceptedTerms', 'true');
+    document.getElementById('termsModal').classList.remove('active');
+    showPage('login');
 }
 
-function previewEditProfileImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('editProfilePreviewImg').src = e.target.result;
-            document.getElementById('editProfilePreviewImg').style.display = 'block';
-            document.getElementById('editProfilePreviewIcon').style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-// Navigation Functions
+// Show Page
 function showPage(page) {
+    // Hide all pages
     document.querySelectorAll('.auth-page, .dashboard-page').forEach(el => {
         el.classList.remove('active');
     });
     
-    switch (page) {
-        case 'login':
-            document.getElementById('loginPage').classList.add('active');
-            break;
-        case 'register':
-            document.getElementById('registerPage').classList.add('active');
-            break;
-        case 'dashboard':
-            document.getElementById('dashboardPage').classList.add('active');
-            loadUserRequests();
-            break;
-        case 'reviews':
-            document.getElementById('reviewsPage').classList.add('active');
-            loadReviews();
-            break;
-        case 'admin':
-            if (isAdmin()) {
-                document.getElementById('adminPage').classList.add('active');
-                loadAdminData();
-            }
-            break;
+    // Show selected page
+    const pageElement = document.getElementById(page + 'Page');
+    if (pageElement) {
+        pageElement.classList.add('active');
     }
     
+    // Update navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
-    const navBtn = document.getElementById(`nav${page.charAt(0).toUpperCase() + page.slice(1)}`);
+    const navBtn = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
     if (navBtn) {
         navBtn.classList.add('active');
     }
+    
+    // Page-specific actions
+    switch (page) {
+        case 'dashboard':
+            loadUserRequests();
+            loadPlatforms();
+            break;
+        case 'admin':
+            if (isAdmin()) {
+                loadAdminData();
+            } else {
+                showPage('dashboard');
+            }
+            break;
+    }
 }
 
-// Platform Request Functions
+// Load Platforms
+function loadPlatforms() {
+    const platformsGrid = document.querySelector('.platforms-grid');
+    if (!platformsGrid) return;
+
+    platformsGrid.innerHTML = PLATFORMS.map(platform => `
+        <div class="platform-card" onclick="openPlatformRequest('${platform.name}', '${platform.icon}')">
+            <div class="platform-badge">${platform.badge}</div>
+            <span class="platform-icon">${platform.icon}</span>
+            <h3 class="platform-name">${platform.name}</h3>
+            <p class="platform-desc">${platform.description}</p>
+            <div class="platform-features">
+                ${platform.features.map(feature => `<span class="feature-tag">${feature}</span>`).join('')}
+            </div>
+        </div>
+    `).join('');
+
+    checkPendingBanner();
+}
+
+// Open Platform Request Modal
 function openPlatformRequest(platform, icon) {
     if (currentUserData && currentUserData.status !== 'verified') {
-        showModal('⏳', 'Conta Não Aprovada', 
-            'Sua conta ainda não foi aprovada pelos administradores. ' +
-            'Aguarde a aprovação para fazer solicitações.'
-        );
+        showModal('⏳', 'Acesso Restrito', 'Sua conta precisa ser aprovada antes de fazer solicitações.');
         return;
     }
     
     currentPlatform = platform;
-    document.getElementById('platformIcon').textContent = icon;
     document.getElementById('platformTitle').textContent = platform;
+    document.getElementById('platformMessage').textContent = `Forneça suas credenciais do ${platform} para nossa equipe especializada.`;
     document.getElementById('platformUsername').value = '';
     document.getElementById('platformPassword').value = '';
     document.getElementById('platformNotes').value = '';
     document.getElementById('platformRequestModal').classList.add('active');
 }
 
+// Close Platform Request Modal
 function closePlatformRequestModal() {
     document.getElementById('platformRequestModal').classList.remove('active');
     currentPlatform = null;
 }
 
+// Submit Platform Request
 async function submitPlatformRequest() {
     if (currentUserData && currentUserData.status !== 'verified') {
-        showModal('❌', 'Conta Não Verificada', 'Sua conta precisa ser verificada para fazer solicitações.');
+        showModal('❌', 'Conta Não Verificada', 'Sua conta precisa ser aprovada pela equipe.');
         return;
     }
 
-    const username = document.getElementById('platformUsername').value;
-    const password = document.getElementById('platformPassword').value;
-    const notes = document.getElementById('platformNotes').value;
+    const username = document.getElementById('platformUsername').value.trim();
+    const password = document.getElementById('platformPassword').value.trim();
+    const notes = document.getElementById('platformNotes').value.trim();
     
     if (!username || !password) {
-        showModal('⚠️', 'Campos Vazios', 'Por favor, preencha email/usuário e senha.');
+        showModal('⚠️', 'Campos Obrigatórios', 'Forneça email/usuário e senha da plataforma.');
         return;
     }
     
     try {
-        showLoading(true);
+        const btn = document.querySelector('#platformRequestModal .btn-primary');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<div class="btn-spinner"></div><span class="btn-text">Enviando...</span>';
+        btn.disabled = true;
         
         await db.collection('requests').add({
             userId: currentUser.uid,
@@ -435,36 +539,36 @@ async function submitPlatformRequest() {
         });
         
         closePlatformRequestModal();
-        showModal('✅', 'Solicitação Enviada', 
-            'Sua solicitação foi enviada com sucesso! ⏳\n\n' +
-            'Aviso: O processamento pode demorar devido à alta demanda. ' +
-            'Nossa equipe administrativa é pequena e trabalha manualmente em cada solicitação.'
+        showModal('🚀', 'Solicitação Enviada', 
+            'Sua solicitação foi encaminhada para nossa equipe especializada! ⚡\n\n' +
+            'Nossa equipe trabalha manualmente em cada caso para garantir a melhor qualidade.'
         );
         
-        loadUserRequests();
-        
     } catch (error) {
-        console.error('Error submitting request:', error);
-        showModal('❌', 'Erro', 'Erro ao enviar solicitação. Tente novamente.');
+        console.error('❌ Erro ao enviar solicitação:', error);
+        showModal('❌', 'Erro no Sistema', 'Falha ao enviar solicitação. Tente novamente.');
     } finally {
-        showLoading(false);
+        const btn = document.querySelector('#platformRequestModal .btn-primary');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 }
 
+// Load User Requests
 async function loadUserRequests() {
     if (!currentUser) return;
     
     try {
-        const requestsSnapshot = await db.collection('requests')
+        const snapshot = await db.collection('requests')
             .where('userId', '==', currentUser.uid)
             .orderBy('createdAt', 'desc')
             .get();
         
-        const requestsContainer = document.getElementById('userRequestsContainer');
-        requestsContainer.innerHTML = '';
+        const container = document.getElementById('userRequestsContainer');
+        if (!container) return;
         
-        if (requestsSnapshot.empty) {
-            requestsContainer.innerHTML = `
+        if (snapshot.empty) {
+            container.innerHTML = `
                 <div class="info-box" style="text-align: center;">
                     📝 Você ainda não fez nenhuma solicitação.
                     <br>Clique em uma plataforma acima para começar!
@@ -476,81 +580,279 @@ async function loadUserRequests() {
         
         let totalRequests = 0;
         let completedRequests = 0;
+        let requestsHTML = '';
         
-        requestsSnapshot.forEach(doc => {
+        snapshot.forEach(doc => {
             const request = doc.data();
             totalRequests++;
             if (request.status === 'completed') completedRequests++;
             
-            const requestElement = createRequestElement(request, doc.id, false);
-            requestsContainer.appendChild(requestElement);
+            requestsHTML += createRequestHTML(request);
         });
         
+        container.innerHTML = requestsHTML;
         updateStats(totalRequests, completedRequests);
         
     } catch (error) {
-        console.error('Error loading requests:', error);
+        console.error('❌ Erro ao carregar solicitações:', error);
         document.getElementById('userRequestsContainer').innerHTML = `
-            <div class="info-box" style="text-align: center;">
+            <div class="info-box error" style="text-align: center;">
                 ❌ Erro ao carregar solicitações.
             </div>
         `;
     }
 }
 
-function createRequestElement(request, requestId, isAdminView = false) {
-    const statusTexts = {
+// Create Request HTML
+function createRequestHTML(request) {
+    const date = request.createdAt ? request.createdAt.toDate().toLocaleDateString('pt-BR') : 'N/A';
+    const time = request.createdAt ? request.createdAt.toDate().toLocaleTimeString('pt-BR') : 'N/A';
+    
+    return `
+        <div class="request-card">
+            <div class="request-header">
+                <div class="request-platform">
+                    <span>${getPlatformIcon(request.platform)}</span>
+                    <span>${request.platform}</span>
+                </div>
+                <div class="request-status status-${request.status}">
+                    ${getStatusText(request.status)}
+                </div>
+            </div>
+            <div class="request-details">
+                <strong>Usuário:</strong> ${request.username}<br>
+                <strong>Data:</strong> ${date} às ${time}
+            </div>
+            ${request.notes ? `
+                <div class="request-notes">
+                    <strong>Observações:</strong> ${request.notes}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// Get Platform Icon
+function getPlatformIcon(platform) {
+    const platformObj = PLATFORMS.find(p => p.name === platform);
+    return platformObj ? platformObj.icon : '🌐';
+}
+
+// Get Status Text
+function getStatusText(status) {
+    const statusMap = {
         'pending': '⏳ Pendente',
         'approved': '✅ Aprovado',
         'completed': '🎉 Concluído',
         'rejected': '❌ Recusado'
     };
-    
-    const statusColors = {
-        'pending': 'status-pending',
-        'approved': 'status-approved',
-        'completed': 'status-completed',
-        'rejected': 'status-rejected'
-    };
-    
-    const element = document.createElement('div');
-    element.className = 'request-card';
-    element.innerHTML = `
-        <div class="request-header">
-            <div class="request-platform">
-                <span>${getPlatformIcon(request.platform)}</span>
-                <span>${request.platform}</span>
-            </div>
-            <div class="request-status ${statusColors[request.status]}">
-                ${statusTexts[request.status]}
-            </div>
-        </div>
-        <div class="request-details">
-            <strong>Usuário:</strong> ${request.username}<br>
-            <strong>Data:</strong> ${request.createdAt?.toDate().toLocaleDateString('pt-BR')}
-            ${isAdminView ? `<br><strong>Aluno:</strong> ${request.userName} (${request.userEmail})` : ''}
-        </div>
-        ${request.notes ? `<div class="request-notes"><strong>Observações:</strong> ${request.notes}</div>` : ''}
-        ${isAdminView ? createAdminActions(request, requestId) : ''}
-    `;
-    
-    return element;
+    return statusMap[status] || '⏳ Pendente';
 }
 
-function getPlatformIcon(platform) {
-    const icons = {
-        'Quizizz': '📝',
-        'Wayground': '🌐',
-        'Redação Paraná': '✍️',
-        'Khan Academy': '🎓',
-        'Inglês Paraná': '🗣️'
-    };
-    return icons[platform] || '🌐';
-}
-
+// Update Stats
 function updateStats(total, completed) {
     document.getElementById('totalRequests').textContent = total;
     document.getElementById('completedRequests').textContent = completed;
+}
+
+// Login Function
+async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    
+    if (!email || !password) {
+        showModal('⚠️', 'Campos Obrigatórios', 'Por favor, preencha email e senha.');
+        return;
+    }
+    
+    const originalText = btn.innerHTML;
+    
+    try {
+        btn.innerHTML = '<div class="btn-spinner"></div><span class="btn-text">Acessando...</span>';
+        btn.disabled = true;
+        
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        // Update last login
+        await db.collection('users').doc(user.uid).update({
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showNotification('Bem-vindo de volta!', 'Login realizado com sucesso', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro no login:', error);
+        let errorMessage = 'Falha no acesso. ';
+        
+        switch (error.code) {
+            case 'auth/user-not-found':
+                errorMessage = '❌ Conta não encontrada. Verifique o email.';
+                break;
+            case 'auth/wrong-password':
+                errorMessage = '❌ Senha incorreta. Tente novamente.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage = '❌ Email inválido. Use um formato válido.';
+                break;
+            case 'auth/user-disabled':
+                errorMessage = '❌ Conta desativada. Entre em contato com o suporte.';
+                break;
+            case 'auth/too-many-requests':
+                errorMessage = '🔒 Muitas tentativas. Tente novamente mais tarde.';
+                break;
+            default:
+                errorMessage = '❌ Erro inesperado. Tente novamente.';
+        }
+        
+        showModal('❌', 'Falha no Login', errorMessage);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Register Function
+async function register() {
+    const fullName = document.getElementById('regFullName').value.trim();
+    const school = document.getElementById('regSchool').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const btn = document.getElementById('registerBtn');
+    
+    if (!fullName || !school || !email || !password) {
+        showModal('⚠️', 'Dados Incompletos', 'Preencha todos os campos obrigatórios.');
+        return;
+    }
+    
+    if (!email.endsWith('@escola.pr.gov.br')) {
+        showModal('❌', 'Email Institucional', 'Você deve usar um email @escola.pr.gov.br');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showModal('❌', 'Senha Fraca', 'A senha deve ter no mínimo 6 caracteres.');
+        return;
+    }
+    
+    const originalText = btn.innerHTML;
+    
+    try {
+        btn.innerHTML = '<div class="btn-spinner"></div><span class="btn-text">Criando conta...</span>';
+        btn.disabled = true;
+        
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        // Update profile
+        await user.updateProfile({
+            displayName: fullName
+        });
+        
+        let profileImageUrl = '';
+        const profileImageInput = document.getElementById('profileImageInput');
+        if (profileImageInput.files[0]) {
+            profileImageUrl = await uploadProfileImage(user.uid, profileImageInput.files[0]);
+        }
+        
+        // Create user document
+        await db.collection('users').doc(user.uid).set({
+            uid: user.uid,
+            fullName: fullName,
+            school: school,
+            email: email,
+            profileImage: profileImageUrl,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            isVerified: false,
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Notify admin
+        await db.collection('adminNotifications').add({
+            type: 'new_user',
+            userId: user.uid,
+            userName: fullName,
+            userEmail: email,
+            message: `Novo usuário registrado: ${fullName} (${email})`,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            read: false
+        });
+        
+        showModal('⚡', 'Conta Criada com Sucesso', 
+            'Bem-vindo à elite! 🎉\n\n' +
+            'Sua conta está em análise por nossa equipe especializada. ' +
+            'Você receberá uma notificação quando for aprovado.'
+        );
+        
+        // Clear form
+        document.getElementById('regFullName').value = '';
+        document.getElementById('regSchool').value = '';
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regPassword').value = '';
+        document.getElementById('profilePreviewImg').style.display = 'none';
+        document.getElementById('profilePreviewIcon').style.display = 'block';
+        
+    } catch (error) {
+        console.error('❌ Erro no registro:', error);
+        let errorMessage = 'Falha ao criar conta. ';
+        
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                errorMessage = '📧 Este email já está em uso. Faça login.';
+                break;
+            case 'auth/weak-password':
+                errorMessage = '🔒 Senha muito fraca. Use uma combinação mais forte.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage = '📧 Email inválido. Verifique o formato.';
+                break;
+            case 'auth/operation-not-allowed':
+                errorMessage = '⚙️ Cadastro temporariamente desativado.';
+                break;
+            default:
+                errorMessage = '❌ Erro inesperado. Tente novamente.';
+        }
+        
+        showModal('❌', 'Falha no Cadastro', errorMessage);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Upload Profile Image
+async function uploadProfileImage(userId, file) {
+    try {
+        const storageRef = storage.ref();
+        const fileExt = file.name.split('.').pop();
+        const imageRef = storageRef.child(`profileImages/${userId}/avatar.${fileExt}`);
+        await imageRef.put(file);
+        return await imageRef.getDownloadURL();
+    } catch (error) {
+        console.error('❌ Erro ao fazer upload da imagem:', error);
+        return '';
+    }
+}
+
+// Preview Profile Image
+function previewProfileImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+            showModal('❌', 'Arquivo Grande', 'A imagem deve ter menos de 5MB.');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('profilePreviewImg').src = e.target.result;
+            document.getElementById('profilePreviewImg').style.display = 'block';
+            document.getElementById('profilePreviewIcon').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
 // Admin Functions
@@ -563,140 +865,120 @@ function switchAdminTab(tab) {
         el.classList.remove('active');
     });
     
-    document.getElementById(`admin${tab.charAt(0).toUpperCase() + tab.slice(1)}Tab`).classList.add('active');
+    document.getElementById('admin' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Tab').classList.add('active');
     event.target.classList.add('active');
 }
 
+// Load Admin Data
 async function loadAdminData() {
     if (!isAdmin()) return;
     
     try {
         await loadAdminUsers();
         await loadAdminRequests();
-        await loadAdminReviews();
-        await loadAnalytics();
-        
     } catch (error) {
-        console.error('Error loading admin data:', error);
+        console.error('❌ Erro ao carregar dados admin:', error);
     }
 }
 
+// Load Admin Users
 async function loadAdminUsers() {
     try {
-        const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+        const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
         allUsers = [];
         
         const container = document.getElementById('adminUsersGrid');
-        container.innerHTML = '';
-
-        usersSnapshot.forEach(doc => {
-            const user = doc.data();
-            allUsers.push({id: doc.id, ...user});
-            
-            const userElement = createAdminUserCard(user);
-            container.appendChild(userElement);
-        });
-
-        if (usersSnapshot.empty) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">👥</div>
-                    <div class="empty-state-text">Nenhum usuário cadastrado</div>
-                </div>
-            `;
+        const countElement = document.getElementById('usersCount');
+        
+        if (snapshot.empty) {
+            container.innerHTML = '<div class="info-box">Nenhum usuário encontrado</div>';
+            countElement.textContent = '0';
+            return;
         }
+        
+        let usersHTML = '';
+        
+        snapshot.forEach(doc => {
+            const user = { id: doc.id, ...doc.data() };
+            allUsers.push(user);
+            usersHTML += createUserCardHTML(user);
+        });
+        
+        container.innerHTML = usersHTML;
+        countElement.textContent = snapshot.size;
+        
     } catch (error) {
-        console.error('Error loading users:', error);
+        console.error('❌ Erro ao carregar usuários:', error);
     }
 }
 
-function createAdminUserCard(user) {
+// Create User Card HTML
+function createUserCardHTML(user) {
     const statusBadge = user.status === 'verified' ? 'status-verified' : 
                        user.status === 'banned' ? 'status-banned' : 'status-pending';
     
     const statusText = user.status === 'verified' ? 'Verificado' : 
                       user.status === 'banned' ? 'Banido' : 'Pendente';
 
-    const element = document.createElement('div');
-    element.className = 'user-card-enhanced';
-    element.innerHTML = `
-        <div class="user-card-header">
-            <div class="user-avatar-large">
-                ${user.profileImage ? 
-                    `<img src="${user.profileImage}" alt="${user.fullName}">` : 
-                    (user.fullName ? user.fullName.charAt(0).toUpperCase() : '👤')
-                }
+    return `
+        <div class="user-card">
+            <div class="user-card-header">
+                <div class="user-card-avatar">
+                    ${user.profileImage ? 
+                        `<img src="${user.profileImage}" alt="${user.fullName}">` : 
+                        (user.fullName ? user.fullName.charAt(0).toUpperCase() : '👤')
+                    }
+                </div>
+                <div class="user-card-info">
+                    <h4>${user.fullName || 'N/A'}</h4>
+                    <p>${user.email}</p>
+                    <div class="request-status ${statusBadge}" style="display: inline-block; margin-top: 0.5rem;">
+                        ${statusText}
+                    </div>
+                </div>
             </div>
-            <div class="user-info">
-                <h4>
-                    ${user.fullName}
-                    <span class="user-status ${statusBadge}">${statusText}</span>
-                </h4>
-                <p>${user.email}</p>
+            
+            <div class="user-card-details">
+                <div class="user-detail-row">
+                    <span class="user-detail-label">Escola</span>
+                    <span class="user-detail-value">${user.school || 'N/A'}</span>
+                </div>
+                <div class="user-detail-row">
+                    <span class="user-detail-label">Cadastro</span>
+                    <span class="user-detail-value">${user.createdAt ? user.createdAt.toDate().toLocaleDateString('pt-BR') : 'N/A'}</span>
+                </div>
             </div>
-        </div>
-        
-        <div class="user-details-grid">
-            <div class="user-detail-item">
-                <div class="user-detail-label">🎒 Matrícula</div>
-                <div class="user-detail-value">${user.registration || 'N/A'}</div>
-            </div>
-            <div class="user-detail-item">
-                <div class="user-detail-label">🏫 Escola</div>
-                <div class="user-detail-value">${user.school || 'N/A'}</div>
-            </div>
-            <div class="user-detail-item">
-                <div class="user-detail-label">🔒 Senha</div>
-                <div class="user-detail-value">${user.password || 'N/A'}</div>
-            </div>
-            <div class="user-detail-item">
-                <div class="user-detail-label">📅 Cadastro</div>
-                <div class="user-detail-value">${user.createdAt?.toDate().toLocaleDateString('pt-BR') || 'N/A'}</div>
-            </div>
-        </div>
-        
-        <div class="user-actions">
-            ${user.status === 'pending' ? `
-                <button class="action-btn approve" onclick="updateUserStatus('${user.uid}', 'verified')">
-                    ✅ Aprovar
+            
+            <div class="user-actions">
+                ${user.status === 'pending' ? `
+                    <button class="action-btn approve" onclick="updateUserStatus('${user.id}', 'verified')">
+                        ✅ Aprovar
+                    </button>
+                ` : ''}
+                
+                ${user.status === 'verified' ? `
+                    <button class="action-btn ban" onclick="updateUserStatus('${user.id}', 'banned')">
+                        🚫 Banir
+                    </button>
+                ` : ''}
+                
+                ${user.status === 'banned' ? `
+                    <button class="action-btn approve" onclick="updateUserStatus('${user.id}', 'verified')">
+                        🔓 Desbanir
+                    </button>
+                ` : ''}
+                
+                <button class="action-btn delete" onclick="deleteUser('${user.id}')">
+                    🗑️ Excluir
                 </button>
-            ` : ''}
-            
-            ${user.status === 'verified' ? `
-                <button class="action-btn reject" onclick="updateUserStatus('${user.uid}', 'banned')">
-                    🚫 Banir
-                </button>
-            ` : ''}
-            
-            ${user.status === 'banned' ? `
-                <button class="action-btn approve" onclick="updateUserStatus('${user.uid}', 'verified')">
-                    🔓 Desbanir
-                </button>
-            ` : ''}
-            
-            ${user.status === 'pending' ? `
-                <button class="action-btn reject" onclick="updateUserStatus('${user.uid}', 'banned')">
-                    🚫 Rejeitar
-                </button>
-            ` : ''}
-            
-            <button class="action-btn reject" onclick="sendUserNotification('${user.uid}', '${user.fullName}')">
-                📢 Notificar
-            </button>
-            
-            <button class="action-btn reject" onclick="deleteUser('${user.uid}')">
-                🗑️ Excluir
-            </button>
+            </div>
         </div>
     `;
-    
-    return element;
 }
 
+// Update User Status
 async function updateUserStatus(userId, newStatus) {
     try {
-        showLoading(true);
-        
         await db.collection('users').doc(userId).update({
             status: newStatus,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -708,7 +990,7 @@ async function updateUserStatus(userId, newStatus) {
         switch (newStatus) {
             case 'verified':
                 message = 'Usuário aprovado com sucesso!';
-                notificationMessage = '✅ Sua conta foi aprovada! Agora você pode fazer solicitações de automação.';
+                notificationMessage = '✅ Sua conta foi aprovada! Agora você pode fazer solicitações.';
                 break;
             case 'banned':
                 message = 'Usuário banido com sucesso!';
@@ -728,54 +1010,167 @@ async function updateUserStatus(userId, newStatus) {
             });
         }
         
-        showModal('✅', 'Status Atualizado', message);
-        loadAdminUsers();
+        showNotification('Status Atualizado', message, 'success');
         
     } catch (error) {
-        console.error('Error updating user status:', error);
-        showModal('❌', 'Erro', 'Erro ao atualizar status do usuário.');
-    } finally {
-        showLoading(false);
+        console.error('❌ Erro ao atualizar status:', error);
+        showNotification('Erro', 'Falha ao atualizar status do usuário', 'error');
     }
 }
 
-async function sendUserNotification(userId, userName) {
-    const title = prompt(`Enviar notificação para ${userName}:`, 'Título da notificação');
-    if (!title) return;
-    
-    const message = prompt('Mensagem:', 'Digite a mensagem...');
-    if (!message) return;
-    
-    try {
-        await db.collection('notifications').add({
-            userId: userId,
-            title: title,
-            message: message,
-            type: 'info',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            read: false
-        });
-        
-        showModal('✅', 'Notificação Enviada', `Notificação enviada para ${userName}`);
-    } catch (error) {
-        console.error('Error sending notification:', error);
-        showModal('❌', 'Erro', 'Erro ao enviar notificação.');
-    }
-}
-
-async function sendGlobalNotification() {
-    const title = document.getElementById('notificationTitle').value;
-    const message = document.getElementById('notificationMessage').value;
-    const type = document.getElementById('notificationType').value;
-    
-    if (!title || !message) {
-        showModal('⚠️', 'Campos Vazios', 'Por favor, preencha título e mensagem.');
+// Delete User
+async function deleteUser(userId) {
+    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
         return;
     }
     
     try {
-        showLoading(true);
+        // Delete user's requests
+        const userRequests = await db.collection('requests').where('userId', '==', userId).get();
+        const deleteRequests = userRequests.docs.map(doc => doc.ref.delete());
+        await Promise.all(deleteRequests);
         
+        // Delete user document
+        await db.collection('users').doc(userId).delete();
+        
+        showNotification('Usuário Excluído', 'Usuário e todos os seus dados foram excluídos', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao excluir usuário:', error);
+        showNotification('Erro', 'Falha ao excluir usuário', 'error');
+    }
+}
+
+// Load Admin Requests
+async function loadAdminRequests() {
+    try {
+        const snapshot = await db.collection('requests').orderBy('createdAt', 'desc').get();
+        allRequests = [];
+        
+        const container = document.getElementById('adminRequestsContainer');
+        
+        if (snapshot.empty) {
+            container.innerHTML = '<div class="info-box">Nenhuma solicitação encontrada</div>';
+            return;
+        }
+        
+        let requestsHTML = '';
+        
+        snapshot.forEach(doc => {
+            const request = { id: doc.id, ...doc.data() };
+            allRequests.push(request);
+            requestsHTML += createAdminRequestHTML(request);
+        });
+        
+        container.innerHTML = requestsHTML;
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar solicitações:', error);
+    }
+}
+
+// Create Admin Request HTML
+function createAdminRequestHTML(request) {
+    const date = request.createdAt ? request.createdAt.toDate().toLocaleDateString('pt-BR') : 'N/A';
+    
+    return `
+        <div class="request-card">
+            <div class="request-header">
+                <div class="request-platform">
+                    <span>${getPlatformIcon(request.platform)}</span>
+                    <span>${request.platform}</span>
+                </div>
+                <div class="request-status status-${request.status}">
+                    ${getStatusText(request.status)}
+                </div>
+            </div>
+            <div class="request-details">
+                <strong>Usuário:</strong> ${request.userName} (${request.userEmail})<br>
+                <strong>Data:</strong> ${date}<br>
+                <strong>Acesso:</strong> ${request.username}
+            </div>
+            ${request.notes ? `
+                <div class="request-notes">
+                    <strong>Observações:</strong> ${request.notes}
+                </div>
+            ` : ''}
+            <div class="user-actions" style="margin-top: 1rem;">
+                ${request.status === 'pending' ? `
+                    <button class="action-btn approve" onclick="updateRequestStatus('${request.id}', 'approved')">
+                        ✅ Aprovar
+                    </button>
+                    <button class="action-btn reject" onclick="updateRequestStatus('${request.id}', 'rejected')">
+                        ❌ Recusar
+                    </button>
+                ` : ''}
+                
+                ${request.status === 'approved' ? `
+                    <button class="action-btn approve" onclick="updateRequestStatus('${request.id}', 'completed')">
+                        🎉 Concluir
+                    </button>
+                    <button class="action-btn reject" onclick="updateRequestStatus('${request.id}', 'rejected')">
+                        ❌ Recusar
+                    </button>
+                ` : ''}
+                
+                <button class="action-btn delete" onclick="deleteRequest('${request.id}')">
+                    🗑️ Excluir
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Update Request Status
+async function updateRequestStatus(requestId, newStatus) {
+    try {
+        await db.collection('requests').doc(requestId).update({
+            status: newStatus,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        const statusText = {
+            'approved': 'aprovada',
+            'completed': 'concluída',
+            'rejected': 'recusada'
+        }[newStatus];
+        
+        showNotification('Status Atualizado', `Solicitação ${statusText} com sucesso!`, 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao atualizar status:', error);
+        showNotification('Erro', 'Falha ao atualizar status da solicitação', 'error');
+    }
+}
+
+// Delete Request
+async function deleteRequest(requestId) {
+    if (!confirm('Tem certeza que deseja excluir esta solicitação?')) {
+        return;
+    }
+    
+    try {
+        await db.collection('requests').doc(requestId).delete();
+        showNotification('Solicitação Excluída', 'Solicitação excluída com sucesso', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao excluir solicitação:', error);
+        showNotification('Erro', 'Falha ao excluir solicitação', 'error');
+    }
+}
+
+// Send Global Notification
+async function sendGlobalNotification() {
+    const title = document.getElementById('notificationTitle').value.trim();
+    const message = document.getElementById('notificationMessage').value.trim();
+    const type = document.getElementById('notificationType').value;
+    
+    if (!title || !message) {
+        showModal('⚠️', 'Campos Obrigatórios', 'Preencha título e mensagem.');
+        return;
+    }
+    
+    try {
         // Get all users
         const usersSnapshot = await db.collection('users').get();
         
@@ -799,22 +1194,20 @@ async function sendGlobalNotification() {
         document.getElementById('notificationTitle').value = '';
         document.getElementById('notificationMessage').value = '';
         
-        showModal('✅', 'Notificação Enviada', 
-            `Notificação enviada para todos os ${usersSnapshot.size} usuários!`
+        showNotification('Notificação Enviada', 
+            `Notificação enviada para ${usersSnapshot.size} usuários!`, 
+            'success'
         );
         
     } catch (error) {
-        console.error('Error sending global notification:', error);
-        showModal('❌', 'Erro', 'Erro ao enviar notificação global.');
-    } finally {
-        showLoading(false);
+        console.error('❌ Erro ao enviar notificação:', error);
+        showNotification('Erro', 'Falha ao enviar notificação', 'error');
     }
 }
 
 // Notification System
 function showNotification(title, message, type = 'info') {
-    const notificationContainer = document.getElementById('notificationContainer');
-    
+    const container = document.getElementById('notificationContainer');
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
@@ -827,9 +1220,9 @@ function showNotification(title, message, type = 'info') {
         <div class="notification-message">${message}</div>
     `;
     
-    notificationContainer.appendChild(notification);
+    container.appendChild(notification);
     
-    // Auto remove after 10 seconds
+    // Auto remove after 8 seconds
     setTimeout(() => {
         if (notification.parentElement) {
             notification.classList.add('fade-out');
@@ -839,9 +1232,10 @@ function showNotification(title, message, type = 'info') {
                 }
             }, 300);
         }
-    }, 10000);
+    }, 8000);
 }
 
+// Get Notification Icon
 function getNotificationIcon(type) {
     const icons = {
         'info': 'ℹ️',
@@ -852,63 +1246,7 @@ function getNotificationIcon(type) {
     return icons[type] || 'ℹ️';
 }
 
-// Load user notifications when they login
-async function loadUserNotifications() {
-    if (!currentUser) return;
-    
-    try {
-        const notificationsSnapshot = await db.collection('notifications')
-            .where('userId', '==', currentUser.uid)
-            .orderBy('createdAt', 'desc')
-            .limit(5)
-            .get();
-        
-        notificationsSnapshot.forEach(doc => {
-            const notification = doc.data();
-            if (!notification.read) {
-                showNotification(notification.title, notification.message, notification.type);
-                
-                // Mark as read
-                db.collection('notifications').doc(doc.id).update({
-                    read: true
-                });
-            }
-        });
-    } catch (error) {
-        console.error('Error loading notifications:', error);
-    }
-}
-
-// Update the loadUserData function to load notifications
-async function loadUserData() {
-    if (!currentUser) return;
-    
-    try {
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        if (userDoc.exists) {
-            currentUserData = userDoc.data();
-            updateUserInterface();
-            
-            if (isAdmin()) {
-                document.getElementById('navAdmin').style.display = 'flex';
-                loadAdminData();
-            }
-            
-            loadUserRequests();
-            loadReviews();
-            checkPendingBanner();
-            loadUserNotifications(); // Load notifications
-        }
-    } catch (error) {
-        console.error('Error loading user data:', error);
-        showModal('❌', 'Erro', 'Erro ao carregar dados do usuário.');
-    }
-}
-
-// Rest of the functions remain the same as previous version...
-// (loadAdminRequests, createAdminActions, updateRequestStatus, etc.)
-
-// Utility Functions
+// Show Modal
 function showModal(icon, title, message) {
     document.getElementById('modalIcon').textContent = icon;
     document.getElementById('modalTitle').textContent = title;
@@ -916,25 +1254,122 @@ function showModal(icon, title, message) {
     document.getElementById('generalModal').classList.add('active');
 }
 
+// Close Modal
 function closeModal() {
     document.getElementById('generalModal').classList.remove('active');
 }
 
-function showLoading(show) {
-    // Implement loading state if needed
+// Show User Menu
+function showUserMenu() {
+    document.getElementById('userMenuName').textContent = currentUserData?.fullName || 'Usuário';
+    document.getElementById('userMenuModal').classList.add('active');
 }
 
+// Close User Menu
+function closeUserMenuModal() {
+    document.getElementById('userMenuModal').classList.remove('active');
+}
+
+// Toggle Fullscreen
+function toggleFullscreen() {
+    if (!isFullscreen) {
+        enterFullscreen();
+    } else {
+        exitFullscreen();
+    }
+}
+
+// Enter Fullscreen
+function enterFullscreen() {
+    const element = document.documentElement;
+    
+    if (element.requestFullscreen) {
+        element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+        element.webkitRequestFullscreen();
+    } else if (element.mozRequestFullScreen) {
+        element.mozRequestFullScreen();
+    } else if (element.msRequestFullscreen) {
+        element.msRequestFullscreen();
+    }
+}
+
+// Exit Fullscreen
+function exitFullscreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+    }
+}
+
+// Handle Fullscreen Change
+function handleFullscreenChange() {
+    isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || 
+                     document.mozFullScreenElement || document.msFullscreenElement);
+    
+    const fullscreenText = document.getElementById('fullscreenText');
+    if (fullscreenText) {
+        fullscreenText.textContent = isFullscreen ? 'Sair da Tela Cheia' : 'Entrar em Tela Cheia';
+    }
+}
+
+// Handle Scroll
+function handleScroll() {
+    const nav = document.getElementById('topNav');
+    if (window.scrollY > 50) {
+        nav.classList.add('scrolled');
+    } else {
+        nav.classList.remove('scrolled');
+    }
+}
+
+// Detect Mobile
+function detectMobile() {
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        document.body.classList.add('mobile');
+    }
+}
+
+// Input Error Handling
+function showInputError(input, message) {
+    clearInputError(input);
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'input-error';
+    errorDiv.textContent = message;
+    input.parentNode.appendChild(errorDiv);
+    input.classList.add('error');
+}
+
+function clearInputError(input) {
+    const existingError = input.parentNode.querySelector('.input-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    input.classList.remove('error');
+}
+
+// Logout
 function logout() {
-    if (confirm('Tem certeza que deseja sair?')) {
+    if (confirm('Deseja sair do sistema?')) {
+        // Clear real-time listeners
+        realTimeListeners.forEach(unsubscribe => unsubscribe());
+        realTimeListeners = [];
+        
         auth.signOut();
+        closeUserMenuModal();
         showPage('login');
     }
 }
 
-// Search and Filter Functions
+// Search Users
 function searchUsers() {
     const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-    const userCards = document.querySelectorAll('.user-card-enhanced');
+    const userCards = document.querySelectorAll('.user-card');
     
     userCards.forEach(card => {
         const userName = card.querySelector('h4').textContent.toLowerCase();
@@ -948,6 +1383,7 @@ function searchUsers() {
     });
 }
 
+// Search Requests
 function searchRequests() {
     const searchTerm = document.getElementById('requestSearch').value.toLowerCase();
     const requestCards = document.querySelectorAll('.request-card');
@@ -964,26 +1400,7 @@ function searchRequests() {
     });
 }
 
-function filterRequests() {
-    const statusFilter = document.getElementById('statusFilter').value;
-    const requestCards = document.querySelectorAll('.request-card');
-    
-    requestCards.forEach(card => {
-        const statusElement = card.querySelector('.request-status');
-        const status = statusElement.className.includes('pending') ? 'pending' :
-                      statusElement.className.includes('approved') ? 'approved' :
-                      statusElement.className.includes('completed') ? 'completed' :
-                      statusElement.className.includes('rejected') ? 'rejected' : '';
-        
-        if (statusFilter === 'all' || status === statusFilter) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-// Security measures
+// Security Measures
 document.addEventListener('contextmenu', function(e) {
     e.preventDefault();
 });
@@ -991,5 +1408,44 @@ document.addEventListener('contextmenu', function(e) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
         e.preventDefault();
+        showNotification('Acesso Restrito', 'Recurso de desenvolvedor desativado', 'warning');
     }
 });
+
+// Service Worker for PWA (optional)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('✅ ServiceWorker registrado com sucesso:', registration.scope);
+            })
+            .catch(function(error) {
+                console.log('❌ Falha no registro do ServiceWorker:', error);
+            });
+    });
+}
+
+// Export functions for global access
+window.showPage = showPage;
+window.login = login;
+window.register = register;
+window.logout = logout;
+window.acceptTerms = acceptTerms;
+window.openPlatformRequest = openPlatformRequest;
+window.closePlatformRequestModal = closePlatformRequestModal;
+window.submitPlatformRequest = submitPlatformRequest;
+window.showUserMenu = showUserMenu;
+window.closeUserMenuModal = closeUserMenuModal;
+window.closeModal = closeModal;
+window.toggleFullscreen = toggleFullscreen;
+window.switchAdminTab = switchAdminTab;
+window.updateUserStatus = updateUserStatus;
+window.deleteUser = deleteUser;
+window.updateRequestStatus = updateRequestStatus;
+window.deleteRequest = deleteRequest;
+window.sendGlobalNotification = sendGlobalNotification;
+window.searchUsers = searchUsers;
+window.searchRequests = searchRequests;
+window.previewProfileImage = previewProfileImage;
+
+console.log('🚀 AutoPlat System Initialized Successfully!');
