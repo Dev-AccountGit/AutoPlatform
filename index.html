@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AutoPlat - Automação Educacional</title>
+    <title>AutoPlat • Automação Educacional</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -11,34 +11,1613 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/x-icon" href="logo.png">
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            /* iOS Color System */
+            --system-primary: #007AFF;
+            --system-secondary: #5856D6;
+            --system-green: #34C759;
+            --system-orange: #FF9500;
+            --system-red: #FF3B30;
+            --system-purple: #AF52DE;
+            --system-teal: #5AC8FA;
+            --system-indigo: #5856D6;
+            
+            /* Dark Theme */
+            --system-background: #000000;
+            --system-surface: #1C1C1E;
+            --system-surface-2: #2C2C2E;
+            --system-surface-3: #3A3A3C;
+            --system-label: #FFFFFF;
+            --system-label-secondary: #EBEBF5;
+            --system-label-tertiary: #EBEBF599;
+            --system-separator: #38383A;
+            --system-fill: #787880;
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            --gradient-purple: linear-gradient(135deg, #AF52DE 0%, #5856D6 100%);
+            --gradient-teal: linear-gradient(135deg, #5AC8FA 0%, #007AFF 100%);
+            --gradient-dark: linear-gradient(135deg, #1C1C1E 0%, #2C2C2E 100%);
+            
+            /* Shadows */
+            --shadow-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            --shadow-3: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+            --shadow-4: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+            --shadow-5: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+            
+            /* Animations */
+            --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+            --ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        html {
+            overflow-x: hidden;
+            overflow-y: auto;
+            touch-action: pan-y;
+            -webkit-text-size-adjust: 100%;
+            background: var(--system-background);
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: var(--system-background);
+            color: var(--system-label);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            line-height: 1.47059;
+            font-weight: 400;
+            letter-spacing: -0.022em;
+        }
+
+        /* Custom Cursor */
+        body:not(.mobile) {
+            cursor: none;
+        }
+
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: var(--system-primary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transition: transform 0.1s var(--ease-out-quad);
+        }
+
+        .custom-cursor-follower {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--system-primary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transition: all 0.15s var(--ease-out-quad);
+            mix-blend-mode: difference;
+        }
+
+        /* ===== LOADING SCREEN ===== */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--system-background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 1;
+            transition: opacity 0.8s var(--ease-out-expo);
+        }
+
+        .loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-content {
+            text-align: center;
+            transform: translateY(0);
+            animation: loadingSlideUp 1.2s var(--ease-out-expo);
+        }
+
+        .loading-logo {
+            margin-bottom: 3rem;
+        }
+
+        .loading-logo .logo-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            animation: logoPulse 2s var(--ease-in-out-quad) infinite;
+        }
+
+        .loading-logo h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.04em;
+        }
+
+        .loading-progress {
+            width: 200px;
+            height: 4px;
+            background: var(--system-surface);
+            border-radius: 2px;
+            margin: 2rem auto;
+            overflow: hidden;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.4s var(--ease-out-quad);
+        }
+
+        .loading-text {
+            color: var(--system-label-secondary);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 1rem;
+        }
+
+        /* ===== BACKGROUND EFFECTS ===== */
+        .background-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .floating-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--system-primary);
+            opacity: 0.03;
+            filter: blur(40px);
+            animation: float 20s infinite var(--ease-in-out-quad);
+        }
+
+        .floating-shape:nth-child(1) {
+            width: 400px;
+            height: 400px;
+            top: 10%;
+            left: 10%;
+            background: var(--system-primary);
+            animation-delay: 0s;
+        }
+
+        .floating-shape:nth-child(2) {
+            width: 300px;
+            height: 300px;
+            top: 60%;
+            right: 10%;
+            background: var(--system-purple);
+            animation-delay: -5s;
+        }
+
+        .floating-shape:nth-child(3) {
+            width: 500px;
+            height: 500px;
+            bottom: 10%;
+            left: 20%;
+            background: var(--system-teal);
+            animation-delay: -10s;
+        }
+
+        /* ===== TOP NAVIGATION ===== */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 88px;
+            background: rgba(28, 28, 30, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--system-separator);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 1000;
+            transition: all 0.4s var(--ease-out-quad);
+        }
+
+        .top-nav.scrolled {
+            height: 70px;
+            background: rgba(28, 28, 30, 0.95);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+        }
+
+        .nav-tag {
+            background: var(--gradient-purple);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            color: var(--system-label-secondary);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-out-quad);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(120, 120, 128, 0.1);
+            color: var(--system-label);
+        }
+
+        .nav-btn.active {
+            background: rgba(120, 120, 128, 0.2);
+            color: var(--system-label);
+            border-color: var(--system-separator);
+        }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s var(--ease-out-quad);
+            position: relative;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+            border-color: var(--system-primary);
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .user-status {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--system-surface);
+        }
+
+        .status-online {
+            background: var(--system-green);
+        }
+
+        .status-offline {
+            background: var(--system-fill);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            margin-top: 88px;
+            padding: 2rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            min-height: calc(100vh - 88px);
+        }
+
+        /* ===== AUTH PAGES ===== */
+        .auth-page {
+            display: none;
+            min-height: calc(100vh - 88px);
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            animation: fadeIn 0.6s var(--ease-out-quad);
+        }
+
+        .auth-page.active {
+            display: flex;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            background: var(--system-surface);
+            backdrop-filter: blur(40px) saturate(180%);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid var(--system-separator);
+            box-shadow: var(--shadow-4);
+            animation: cardSlideUp 0.8s var(--ease-out-back);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .auth-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .auth-subtitle {
+            color: var(--system-label-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .profile-upload {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .profile-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 24px;
+            background: var(--gradient-dark);
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            cursor: pointer;
+            border: 3px solid var(--system-separator);
+            transition: all 0.3s var(--ease-out-quad);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .profile-preview:hover {
+            transform: scale(1.05);
+            border-color: var(--system-primary);
+        }
+
+        .profile-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+        }
+
+        .profile-upload-hint {
+            color: var(--system-label-tertiary);
+            font-size: 0.9rem;
+        }
+
+        /* ===== INPUT GROUPS ===== */
+        .input-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--system-label-secondary);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 16px 18px;
+            background: var(--system-surface-2);
+            border: 2px solid var(--system-surface-2);
+            border-radius: 14px;
+            color: var(--system-label);
+            font-size: 17px;
+            transition: all 0.3s var(--ease-out-quad);
+            font-family: inherit;
+        }
+
+        .input-field::placeholder {
+            color: var(--system-label-tertiary);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--system-primary);
+            background: var(--system-surface-3);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+
+        .input-field.error {
+            border-color: var(--system-red);
+        }
+
+        .input-hint {
+            font-size: 13px;
+            color: var(--system-label-tertiary);
+            margin-top: 0.5rem;
+        }
+
+        .input-error {
+            font-size: 13px;
+            color: var(--system-red);
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-out-quad);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            width: 100%;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s var(--ease-out-quad);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: var(--shadow-2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-3);
+        }
+
+        .btn-secondary {
+            background: var(--system-surface-2);
+            border: 2px solid var(--system-separator);
+            color: var(--system-label);
+        }
+
+        .btn-secondary:hover {
+            background: var(--system-surface-3);
+            border-color: var(--system-primary);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn-loading {
+            pointer-events: none;
+        }
+
+        .btn-loading .btn-text {
+            opacity: 0;
+        }
+
+        .btn-spinner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .btn-icon {
+            font-size: 1.1em;
+        }
+
+        /* ===== INFO BOXES ===== */
+        .info-box {
+            background: var(--system-surface-2);
+            border: 1px solid var(--system-separator);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--system-label-secondary);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .info-box.elite {
+            background: linear-gradient(135deg, var(--system-surface-2) 0%, rgba(0, 122, 255, 0.1) 100%);
+            border-color: var(--system-primary);
+            color: var(--system-label);
+        }
+
+        .info-box.warning {
+            background: linear-gradient(135deg, var(--system-surface-2) 0%, rgba(255, 149, 0, 0.1) 100%);
+            border-color: var(--system-orange);
+            color: var(--system-label);
+        }
+
+        .info-box.error {
+            background: linear-gradient(135deg, var(--system-surface-2) 0%, rgba(255, 59, 48, 0.1) 100%);
+            border-color: var(--system-red);
+            color: var(--system-label);
+        }
+
+        /* ===== DASHBOARD ===== */
+        .dashboard-page {
+            display: none;
+            animation: fadeIn 0.6s var(--ease-out-quad);
+        }
+
+        .dashboard-page.active {
+            display: block;
+        }
+
+        /* Welcome Section */
+        .welcome-section {
+            background: var(--gradient-dark);
+            border: 1px solid var(--system-separator);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+        }
+
+        .welcome-content h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+        }
+
+        .status-message {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .welcome-tagline {
+            background: rgba(120, 120, 128, 0.1);
+            border: 1px solid var(--system-separator);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            color: var(--system-label-secondary);
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .welcome-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: var(--system-surface);
+            border: 1px solid var(--system-separator);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s var(--ease-out-quad);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--system-primary);
+            box-shadow: var(--shadow-3);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--system-label);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--system-label-secondary);
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section-header {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--system-label);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .section-subtitle {
+            color: var(--system-label-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Platform Cards */
+        .platforms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .platform-card {
+            background: var(--system-surface);
+            border: 1px solid var(--system-separator);
+            border-radius: 20px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.4s var(--ease-out-back);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .platform-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 122, 255, 0.05), transparent);
+            transition: left 0.6s var(--ease-out-quad);
+        }
+
+        .platform-card:hover::before {
+            left: 100%;
+        }
+
+        .platform-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--system-primary);
+            box-shadow: var(--shadow-4);
+        }
+
+        .platform-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--gradient-primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .platform-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            display: block;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .platform-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--system-label);
+        }
+
+        .platform-desc {
+            color: var(--system-label-secondary);
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .platform-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .feature-tag {
+            background: var(--system-surface-2);
+            color: var(--system-label-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        /* Request Cards */
+        .requests-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .request-card {
+            background: var(--system-surface);
+            border: 1px solid var(--system-separator);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s var(--ease-out-quad);
+            position: relative;
+        }
+
+        .request-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--system-primary);
+            box-shadow: var(--shadow-2);
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .request-platform {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--system-label);
+        }
+
+        .request-status {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending { background: rgba(255, 149, 0, 0.1); color: var(--system-orange); }
+        .status-approved { background: rgba(52, 199, 89, 0.1); color: var(--system-green); }
+        .status-completed { background: rgba(0, 122, 255, 0.1); color: var(--system-primary); }
+        .status-rejected { background: rgba(255, 59, 48, 0.1); color: var(--system-red); }
+
+        .request-details {
+            color: var(--system-label-secondary);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .request-notes {
+            background: var(--system-surface-2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 14px;
+            color: var(--system-label-secondary);
+        }
+
+        /* ===== MODALS ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            animation: modalFadeIn 0.4s var(--ease-out-quad);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--system-surface);
+            backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--system-separator);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-5);
+            animation: modalSlideUp 0.5s var(--ease-out-back);
+        }
+
+        .modal-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: var(--system-label);
+            letter-spacing: -0.02em;
+        }
+
+        .modal-message {
+            color: var(--system-label-secondary);
+            margin-bottom: 2rem;
+            text-align: center;
+            line-height: 1.5;
+            font-size: 1.1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        /* Terms Modal */
+        .terms-content {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .terms-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--system-surface-2);
+            border-radius: 14px;
+            border: 1px solid var(--system-separator);
+        }
+
+        .terms-checkbox input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--system-primary);
+        }
+
+        .terms-checkbox label {
+            color: var(--system-label);
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        /* ===== NOTIFICATION SYSTEM ===== */
+        .notification-container {
+            position: fixed;
+            top: 100px;
+            right: 2rem;
+            z-index: 1500;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .notification {
+            background: var(--system-surface);
+            border: 1px solid var(--system-separator);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-4);
+            backdrop-filter: blur(20px);
+            animation: notificationSlideIn 0.4s var(--ease-out-back);
+            max-width: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notification::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .notification.info::before { background: var(--system-primary); }
+        .notification.warning::before { background: var(--system-orange); }
+        .notification.success::before { background: var(--system-green); }
+        .notification.error::before { background: var(--system-red); }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--system-label);
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: var(--system-label-tertiary);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.2s var(--ease-out-quad);
+        }
+
+        .notification-close:hover {
+            background: var(--system-surface-2);
+            color: var(--system-label);
+        }
+
+        .notification-message {
+            color: var(--system-label-secondary);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .notification.fade-out {
+            animation: notificationSlideOut 0.3s var(--ease-out-quad) forwards;
+        }
+
+        /* ===== ADMIN PANEL ===== */
+        .admin-section {
+            background: var(--system-surface);
+            border: 1px solid var(--system-separator);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .admin-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-tab {
+            padding: 12px 20px;
+            background: var(--system-surface-2);
+            border: 1px solid var(--system-separator);
+            border-radius: 12px;
+            color: var(--system-label-secondary);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-out-quad);
+        }
+
+        .admin-tab:hover {
+            background: var(--system-surface-3);
+            color: var(--system-label);
+        }
+
+        .admin-tab.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        .admin-content {
+            display: none;
+        }
+
+        .admin-content.active {
+            display: block;
+            animation: fadeIn 0.4s var(--ease-out-quad);
+        }
+
+        .admin-toolbar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-box .input-field {
+            background: var(--system-surface-2);
+        }
+
+        .user-count {
+            color: var(--system-label-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Users Grid */
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .user-card {
+            background: var(--system-surface);
+            border: 1px solid var(--system-separator);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s var(--ease-out-quad);
+        }
+
+        .user-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--system-primary);
+            box-shadow: var(--shadow-3);
+        }
+
+        .user-card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .user-card-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            position: relative;
+        }
+
+        .user-card-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 14px;
+            object-fit: cover;
+        }
+
+        .user-card-info h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--system-label);
+            margin-bottom: 0.25rem;
+        }
+
+        .user-card-info p {
+            font-size: 14px;
+            color: var(--system-label-secondary);
+        }
+
+        .user-card-details {
+            background: var(--system-surface-2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .user-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--system-separator);
+        }
+
+        .user-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .user-detail-label {
+            font-size: 13px;
+            color: var(--system-label-tertiary);
+        }
+
+        .user-detail-value {
+            font-size: 14px;
+            color: var(--system-label);
+            font-weight: 500;
+        }
+
+        .user-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s var(--ease-out-quad);
+            text-align: center;
+        }
+
+        .action-btn.approve {
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--system-green);
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
+
+        .action-btn.approve:hover {
+            background: rgba(52, 199, 89, 0.2);
+        }
+
+        .action-btn.reject {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--system-red);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+
+        .action-btn.reject:hover {
+            background: rgba(255, 59, 48, 0.2);
+        }
+
+        .action-btn.ban {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--system-orange);
+            border: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .action-btn.ban:hover {
+            background: rgba(255, 149, 0, 0.2);
+        }
+
+        .action-btn.delete {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--system-red);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+
+        .action-btn.delete:hover {
+            background: rgba(255, 59, 48, 0.2);
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes loadingSlideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(120deg); }
+            66% { transform: translateY(10px) rotate(240deg); }
+        }
+
+        @keyframes cardSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes notificationSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes notificationSlideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .top-nav {
+                padding: 0 1rem;
+                height: 76px;
+            }
+            
+            .top-nav.scrolled {
+                height: 60px;
+            }
+            
+            .main-content {
+                margin-top: 76px;
+                padding: 1rem;
+            }
+            
+            .nav-btn span:last-child {
+                display: none;
+            }
+            
+            .auth-card {
+                padding: 2rem;
+            }
+            
+            .welcome-section {
+                padding: 2rem;
+            }
+            
+            .welcome-content h1 {
+                font-size: 2.2rem;
+            }
+            
+            .welcome-stats {
+                flex-direction: column;
+            }
+            
+            .platforms-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-toolbar {
+                flex-direction: column;
+            }
+            
+            .search-box {
+                min-width: 100%;
+            }
+            
+            .users-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                padding: 2rem;
+                margin: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-logo span {
+                display: none;
+            }
+            
+            .auth-card {
+                padding: 1.5rem;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--system-surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--system-surface-3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--system-fill);
+        }
+
+        /* ===== FULLSCREEN SUPPORT ===== */
+        :fullscreen .top-nav {
+            padding-top: env(safe-area-inset-top);
+        }
+
+        :-webkit-full-screen .top-nav {
+            padding-top: env(safe-area-inset-top);
+        }
+
+        :-moz-full-screen .top-nav {
+            padding-top: env(safe-area-inset-top);
+        }
+
+        /* ===== ACCESSIBILITY ===== */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* ===== PRINT STYLES ===== */
+        @media print {
+            .top-nav,
+            .loading-screen,
+            .modal,
+            .notification-container {
+                display: none !important;
+            }
+            
+            .main-content {
+                margin-top: 0;
+            }
+            
+            body {
+                background: white;
+                color: black;
+            }
+        }
+    </style>
 </head>
 <body>
+    <!-- Custom Cursor -->
+    <div class="custom-cursor"></div>
+    <div class="custom-cursor-follower"></div>
+
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="floating-shapes">
+            <div class="floating-shape"></div>
+            <div class="floating-shape"></div>
+            <div class="floating-shape"></div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <div class="logo-icon">⚡</div>
+                <h1>AutoPlat</h1>
+            </div>
+            <div class="loading-progress">
+                <div class="loading-progress-bar" id="loadingProgress"></div>
+            </div>
+            <div class="loading-text" id="loadingText">Inicializando sistema seguro...</div>
+        </div>
+    </div>
+
     <!-- Terms Modal -->
-    <div class="modal active" id="termsModal">
+    <div class="modal" id="termsModal">
         <div class="modal-content">
-            <div class="modal-icon">⚠️</div>
-            <h3 class="modal-title">Termos de Uso - AutoPlat</h3>
+            <div class="modal-icon">🔒</div>
+            <h3 class="modal-title">Termos de Serviço</h3>
             <div class="terms-content">
-                <div class="info-box" style="text-align: left; margin-bottom: 20px;">
-                    <p><strong>📋 LEIA ATENTAMENTE ANTES DE CONTINUAR:</strong></p>
+                <div class="info-box elite">
+                    <p><strong>🚨 AVISO IMPORTANTE</strong></p>
                     <br>
-                    <p>🔒 <strong>ACESSO À CONTA:</strong> Nossa equipe terá acesso às suas credenciais do @escola.pr.gov.br exclusivamente para realizar as automações solicitadas.</p>
+                    <p>🛡️ <strong>EQUIPE ESPECIALIZADA:</strong> Somos um grupo anônimo de especialistas em automação educacional.</p>
                     <br>
-                    <p>📝 <strong>DADOS VERÍDICOS:</strong> Você deve fornecer informações reais e precisas. Contas com dados incorretos serão <strong>BLOQUEADAS E EXCLUÍDAS</strong> permanentemente.</p>
+                    <p>⚡ <strong>SERVIÇO PREMIUM:</strong> Oferecemos soluções completas para plataformas educacionais.</p>
                     <br>
-                    <p>⏳ <strong>APROVAÇÃO DA CONTA:</strong> Sua conta precisa ser aprovada por um administrador antes de fazer solicitações.</p>
+                    <p>🔐 <strong>SEGURANÇA MÁXIMA:</strong> Suas credenciais são protegidas com criptografia avançada.</p>
                     <br>
-                    <p>🛡️ <strong>SEGURANÇA:</strong> Suas credenciais são criptografadas e armazenadas com segurança. Apenas administradores autorizados têm acesso.</p>
+                    <p>⏳ <strong>PROCESSO MANUAL:</strong> Cada solicitação é tratada individualmente por nossos especialistas.</p>
                 </div>
                 
                 <div class="terms-checkbox">
                     <input type="checkbox" id="acceptTerms">
-                    <label for="acceptTerms">Li e concordo com os termos de uso acima</label>
+                    <label for="acceptTerms">Compreendo e aceito os termos do serviço especializado</label>
                 </div>
             </div>
-            <button class="btn" id="acceptTermsBtn" disabled onclick="acceptTerms()">Aceitar e Continuar</button>
+            <button class="btn btn-primary" id="acceptTermsBtn" disabled onclick="acceptTerms()">
+                <span class="btn-text">Aceitar e Acessar</span>
+            </button>
         </div>
     </div>
 
@@ -48,25 +1627,22 @@
     <!-- Account Pending Banner -->
     <div class="pending-banner" id="pendingBanner" style="display: none;">
         <div class="pending-content">
-            <span class="pending-icon">⏳</span>
-            <span class="pending-text">Sua conta está aguardando aprovação dos administradores. Você poderá fazer solicitações assim que for aprovado.</span>
+            <span class="pending-icon">⚡</span>
+            <span class="pending-text">Sua conta está sendo analisada por nossa equipe de especialistas</span>
         </div>
     </div>
 
     <!-- Top Navigation -->
-    <nav class="top-nav">
+    <nav class="top-nav" id="topNav">
         <div class="nav-logo">
-            <img src="logo.png" alt="AutoPlat Logo" class="nav-logo-img" onerror="this.style.display='none'">
+            <div class="logo-icon">⚡</div>
             <span>AutoPlat</span>
+            <div class="nav-tag">Elite</div>
         </div>
         <div class="nav-menu">
             <div class="nav-btn active" onclick="showPage('dashboard')" id="navDashboard" style="display: none;">
                 <span>🏠</span>
-                <span>Início</span>
-            </div>
-            <div class="nav-btn" onclick="showPage('reviews')" id="navReviews" style="display: none;">
-                <span>⭐</span>
-                <span>Avaliações</span>
+                <span>Painel</span>
             </div>
             <div class="nav-btn" onclick="showPage('admin')" id="navAdmin" style="display: none;">
                 <span>🔐</span>
@@ -74,6 +1650,7 @@
             </div>
             <div class="user-avatar" onclick="showUserMenu()" id="userAvatar" style="display: none;">
                 👤
+                <div class="user-status status-online"></div>
             </div>
         </div>
     </nav>
@@ -84,26 +1661,33 @@
         <div class="auth-page active" id="loginPage">
             <div class="auth-card">
                 <div class="auth-header">
-                    <img src="logo.png" alt="AutoPlat Logo" class="auth-logo" onerror="this.style.display='none'">
                     <div class="auth-icon">🔐</div>
-                    <h2 class="auth-title">Bem-vindo de volta</h2>
-                    <p class="auth-subtitle">Entre para acessar a plataforma</p>
+                    <h2 class="auth-title">Bem-vindo</h2>
+                    <p class="auth-subtitle">Entre com suas credenciais</p>
                 </div>
                 
-                <div class="info-box">
-                    ⚠️ Use suas credenciais reais do @escola.pr.gov.br. Contas com dados falsos serão bloqueadas.
+                <div class="info-box elite">
+                    ⚡ <strong>SERVIÇO ELITE:</strong> Automação completa por especialistas
                 </div>
 
                 <div class="input-group">
-                    <label>📧 Email</label>
-                    <input type="email" id="loginEmail" placeholder="seu@escola.pr.gov.br">
+                    <label>📧 Email Institucional</label>
+                    <input type="email" id="loginEmail" class="input-field" placeholder="seu@escola.pr.gov.br">
+                    <div class="input-hint">Use seu email @escola.pr.gov.br</div>
                 </div>
                 <div class="input-group">
                     <label>🔒 Senha</label>
-                    <input type="password" id="loginPassword" placeholder="Digite sua senha">
+                    <input type="password" id="loginPassword" class="input-field" placeholder="Sua senha de acesso">
                 </div>
-                <button class="btn" onclick="login()">Entrar na Plataforma</button>
-                <button class="btn btn-secondary" onclick="showPage('register')">Criar Nova Conta</button>
+                
+                <button class="btn btn-primary" onclick="login()" id="loginBtn">
+                    <span class="btn-text">Acessar Sistema</span>
+                    <span class="btn-icon">🚀</span>
+                </button>
+                <button class="btn btn-secondary" onclick="showPage('register')">
+                    <span class="btn-text">Criar Nova Conta</span>
+                    <span class="btn-icon">✨</span>
+                </button>
             </div>
         </div>
 
@@ -111,55 +1695,63 @@
         <div class="auth-page" id="registerPage">
             <div class="auth-card">
                 <div class="auth-header">
-                    <img src="logo.png" alt="AutoPlat Logo" class="auth-logo" onerror="this.style.display='none'">
-                    <div class="auth-icon">✨</div>
+                    <div class="auth-icon">👤</div>
                     <h2 class="auth-title">Criar Conta</h2>
-                    <p class="auth-subtitle">Junte-se à nossa comunidade</p>
+                    <p class="auth-subtitle">Junte-se ao serviço elite</p>
                 </div>
                 
                 <div class="profile-upload">
                     <div class="profile-preview" onclick="document.getElementById('profileImageInput').click()">
-                        <span id="profilePreviewIcon">📷</span>
+                        <span id="profilePreviewIcon">👤</span>
                         <img id="profilePreviewImg" style="display: none;">
                     </div>
-                    <input type="file" id="profileImageInput" accept="image/*" onchange="previewProfileImage(event)">
+                    <div class="profile-upload-hint">Clique para adicionar foto</div>
+                    <input type="file" id="profileImageInput" accept="image/*" onchange="previewProfileImage(event)" style="display: none;">
                 </div>
 
-                <div class="info-box">
-                    🛡️ Use seus dados reais do @escola.pr.gov.br. Contas com informações falsas serão excluídas.
+                <div class="info-box elite">
+                    🛡️ Use dados reais para verificação rápida
                 </div>
 
                 <div class="input-group">
-                    <label>👤 Nome Completo (Real)</label>
-                    <input type="text" id="regFullName" placeholder="João Silva">
-                </div>
-                <div class="input-group">
-                    <label>🎒 Número de Matrícula</label>
-                    <input type="text" id="regRegistration" placeholder="202411234567">
+                    <label>👤 Nome Completo</label>
+                    <input type="text" id="regFullName" class="input-field" placeholder="Seu nome completo">
                 </div>
                 <div class="input-group">
                     <label>🏫 Escola</label>
-                    <input type="text" id="regSchool" placeholder="Colégio Estadual do Paraná">
+                    <input type="text" id="regSchool" class="input-field" placeholder="Sua instituição de ensino">
                 </div>
                 <div class="input-group">
                     <label>📧 Email @escola.pr.gov.br</label>
-                    <input type="email" id="regEmail" placeholder="seu@escola.pr.gov.br">
+                    <input type="email" id="regEmail" class="input-field" placeholder="seu@escola.pr.gov.br">
                 </div>
                 <div class="input-group">
                     <label>🔒 Senha</label>
-                    <input type="password" id="regPassword" placeholder="Crie uma senha segura">
+                    <input type="password" id="regPassword" class="input-field" placeholder="Crie uma senha forte">
+                    <div class="input-hint">Mínimo 6 caracteres</div>
                 </div>
-                <button class="btn" onclick="register()">Criar Conta</button>
-                <button class="btn btn-secondary" onclick="showPage('login')">Já tenho conta</button>
+
+                <button class="btn btn-primary" onclick="register()" id="registerBtn">
+                    <span class="btn-text">Criar Conta</span>
+                    <span class="btn-icon">⚡</span>
+                </button>
+                <button class="btn btn-secondary" onclick="showPage('login')">
+                    <span class="btn-text">Voltar ao Login</span>
+                    <span class="btn-icon">↩️</span>
+                </button>
             </div>
         </div>
 
         <!-- Dashboard Page -->
         <div class="dashboard-page" id="dashboardPage">
-            <div class="welcome-banner">
+            <!-- Welcome Section -->
+            <div class="welcome-section">
                 <div class="welcome-content">
-                    <h2>👋 Bem-vindo, <span id="welcomeUserName">Usuário</span>!</h2>
-                    <p id="welcomeStatus">Carregando status da conta...</p>
+                    <h1>👋 Bem-vindo, <span id="welcomeUserName">Agente</span>!</h1>
+                    <div id="welcomeStatus" class="status-message">Carregando status do sistema...</div>
+                    <div class="welcome-tagline">
+                        ⚡ Automação educacional por especialistas
+                    </div>
                 </div>
                 <div class="welcome-stats">
                     <div class="stat-card">
@@ -179,104 +1771,39 @@
                 </div>
             </div>
 
+            <!-- Platforms Section -->
             <div class="section">
                 <div class="section-header">
                     <div class="section-title">
-                        <span>🎓</span>
-                        <span>Plataformas Disponíveis</span>
+                        <span>🎯</span>
+                        <span>Plataformas</span>
+                    </div>
+                    <div class="section-subtitle">
+                        Serviço completo de automação
                     </div>
                 </div>
 
                 <div class="platforms-grid">
-                    <div class="platform-card" onclick="openPlatformRequest('Quizizz', '📝')">
-                        <span class="platform-icon">📝</span>
-                        <h3 class="platform-name">Quizizz</h3>
-                        <p class="platform-desc">Plataforma interativa de quizzes e avaliações gamificadas.</p>
-                        <div class="platform-features">
-                            <span class="feature-tag">Quizzes</span>
-                            <span class="feature-tag">Provas</span>
-                            <span class="feature-tag">Avaliações</span>
-                        </div>
-                    </div>
-
-                    <div class="platform-card" onclick="openPlatformRequest('Wayground', '🌐')">
-                        <span class="platform-icon">🌐</span>
-                        <h3 class="platform-name">Wayground</h3>
-                        <p class="platform-desc">Plataforma educacional completa com cursos e módulos.</p>
-                        <div class="platform-features">
-                            <span class="feature-tag">Cursos</span>
-                            <span class="feature-tag">Módulos</span>
-                            <span class="feature-tag">Trilhas</span>
-                        </div>
-                    </div>
-
-                    <div class="platform-card" onclick="openPlatformRequest('Redação Paraná', '✍️')">
-                        <span class="platform-icon">✍️</span>
-                        <h3 class="platform-name">Redação Paraná</h3>
-                        <p class="platform-desc">Sistema de produção e correção de redações ENEM.</p>
-                        <div class="platform-features">
-                            <span class="feature-tag">ENEM</span>
-                            <span class="feature-tag">Vestibular</span>
-                            <span class="feature-tag">Dissertação</span>
-                        </div>
-                    </div>
-
-                    <div class="platform-card" onclick="openPlatformRequest('Khan Academy', '🎓')">
-                        <span class="platform-icon">🎓</span>
-                        <h3 class="platform-name">Khan Academy</h3>
-                        <p class="platform-desc">Plataforma mundial de educação gratuita com exercícios.</p>
-                        <div class="platform-features">
-                            <span class="feature-tag">Matemática</span>
-                            <span class="feature-tag">Ciências</span>
-                            <span class="feature-tag">Exercícios</span>
-                        </div>
-                    </div>
-
-                    <div class="platform-card premium" onclick="openPlatformRequest('Inglês Paraná', '🗣️')">
-                        <span class="platform-icon">🗣️</span>
-                        <h3 class="platform-name">Inglês Paraná ⭐</h3>
-                        <p class="platform-desc">Principal plataforma de aprendizado de inglês oficial.</p>
-                        <div class="platform-features">
-                            <span class="feature-tag">Vocabulário</span>
-                            <span class="feature-tag">Gramática</span>
-                            <span class="feature-tag">Listening</span>
-                        </div>
-                    </div>
+                    <!-- Platform cards will be dynamically loaded -->
                 </div>
             </div>
 
-            <!-- My Requests -->
+            <!-- Requests Section -->
             <div class="section">
                 <div class="section-header">
                     <div class="section-title">
-                        <span>📋</span>
+                        <span>📊</span>
                         <span>Minhas Solicitações</span>
                     </div>
-                </div>
-                <div id="userRequestsContainer">
-                    <div class="spinner"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reviews Page -->
-        <div class="dashboard-page" id="reviewsPage">
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <span>⭐</span>
-                        <span>Avaliações da Plataforma</span>
+                    <div class="section-subtitle">
+                        Acompanhe o status das suas missões
                     </div>
                 </div>
-
-                <div style="text-align: center; margin-bottom: 32px;">
-                    <button class="btn" onclick="openReviewModal()" style="max-width: 300px; margin: 0 auto;">
-                        ⭐ Avaliar Plataforma
-                    </button>
-                </div>
-
-                <div class="reviews-container" id="reviewsContainer">
-                    <div class="spinner"></div>
+                <div class="requests-grid" id="userRequestsContainer">
+                    <div class="loading-state">
+                        <div class="loading-spinner small"></div>
+                        <p>Carregando suas solicitações...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -284,211 +1811,111 @@
         <!-- Admin Page -->
         <div class="dashboard-page" id="adminPage">
             <div class="admin-section">
-                <div class="section-title" style="margin-bottom: 24px;">
-                    <span>🔐</span>
-                    <span>Painel de Administrador</span>
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>🔐</span>
+                        <span>Painel Administrativo</span>
+                    </div>
+                    <div class="section-subtitle">
+                        Gerencie usuários e solicitações
+                    </div>
                 </div>
 
                 <div class="admin-tabs">
                     <div class="admin-tab active" onclick="switchAdminTab('users')">👥 Usuários</div>
                     <div class="admin-tab" onclick="switchAdminTab('requests')">📋 Solicitações</div>
-                    <div class="admin-tab" onclick="switchAdminTab('reviews')">⭐ Avaliações</div>
                     <div class="admin-tab" onclick="switchAdminTab('notifications')">📢 Notificações</div>
-                    <div class="admin-tab" onclick="switchAdminTab('analytics')">📊 Analytics</div>
                 </div>
 
                 <!-- Users Tab -->
                 <div class="admin-content active" id="adminUsersTab">
-                    <div class="search-box">
-                        <input type="text" id="userSearch" placeholder="🔍 Buscar usuário..." oninput="searchUsers()">
+                    <div class="admin-toolbar">
+                        <div class="search-box">
+                            <input type="text" id="userSearch" class="input-field" placeholder="🔍 Buscar usuário...">
+                        </div>
+                        <div class="user-count">
+                            <span id="usersCount">0</span> usuários
+                        </div>
                     </div>
                     <div class="users-grid" id="adminUsersGrid">
-                        <div class="spinner"></div>
+                        <div class="loading-state">
+                            <div class="loading-spinner small"></div>
+                            <p>Carregando usuários...</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Requests Tab -->
                 <div class="admin-content" id="adminRequestsTab">
-                    <div class="search-box">
-                        <input type="text" id="requestSearch" placeholder="🔍 Buscar solicitação..." oninput="searchRequests()">
+                    <div class="admin-toolbar">
+                        <div class="search-box">
+                            <input type="text" id="requestSearch" class="input-field" placeholder="🔍 Buscar solicitação...">
+                        </div>
                     </div>
-                    <div class="requests-filters">
-                        <select id="statusFilter" onchange="filterRequests()">
-                            <option value="all">Todos os status</option>
-                            <option value="pending">Pendentes</option>
-                            <option value="approved">Aprovados</option>
-                            <option value="completed">Concluídos</option>
-                            <option value="rejected">Recusados</option>
-                        </select>
-                    </div>
-                    <div id="adminRequestsContainer">
-                        <div class="spinner"></div>
-                    </div>
-                </div>
-
-                <!-- Reviews Tab -->
-                <div class="admin-content" id="adminReviewsTab">
-                    <div class="admin-actions">
-                        <button class="btn" onclick="openFakeReviewModal()">
-                            ➕ Criar Avaliação Falsa
-                        </button>
-                    </div>
-                    <div class="reviews-container" id="adminReviewsContainer">
-                        <div class="spinner"></div>
+                    <div class="requests-grid" id="adminRequestsContainer">
+                        <div class="loading-state">
+                            <div class="loading-spinner small"></div>
+                            <p>Carregando solicitações...</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Notifications Tab -->
                 <div class="admin-content" id="adminNotificationsTab">
                     <div class="notification-management">
-                        <h3 style="margin-bottom: 20px; color: #c084fc;">Enviar Notificação Global</h3>
+                        <h3 style="margin-bottom: 1rem;">Enviar Notificação</h3>
                         <div class="input-group">
-                            <label>Título da Notificação</label>
-                            <input type="text" id="notificationTitle" placeholder="Título importante...">
+                            <label>Título</label>
+                            <input type="text" id="notificationTitle" class="input-field" placeholder="Título da notificação">
                         </div>
                         <div class="input-group">
                             <label>Mensagem</label>
-                            <textarea class="form-textarea" id="notificationMessage" placeholder="Digite a mensagem para todos os usuários..." rows="4"></textarea>
+                            <textarea id="notificationMessage" class="input-field" placeholder="Digite a mensagem..." rows="4"></textarea>
                         </div>
                         <div class="input-group">
-                            <label>Tipo de Notificação</label>
-                            <select id="notificationType" style="width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 14px; color: #ffffff;">
-                                <option value="info">ℹ️ Informativa</option>
+                            <label>Tipo</label>
+                            <select id="notificationType" class="input-field">
+                                <option value="info">ℹ️ Informativo</option>
                                 <option value="warning">⚠️ Aviso</option>
                                 <option value="success">✅ Sucesso</option>
                                 <option value="error">❌ Erro</option>
                             </select>
                         </div>
-                        <button class="btn" onclick="sendGlobalNotification()">📢 Enviar para Todos os Usuários</button>
-                    </div>
-                </div>
-
-                <!-- Analytics Tab -->
-                <div class="admin-content" id="adminAnalyticsTab">
-                    <div class="analytics-grid">
-                        <div class="analytics-card">
-                            <div class="analytics-icon">👥</div>
-                            <div class="analytics-content">
-                                <div class="analytics-number" id="totalUsers">0</div>
-                                <div class="analytics-label">Total de Usuários</div>
-                            </div>
-                        </div>
-                        <div class="analytics-card">
-                            <div class="analytics-icon">📋</div>
-                            <div class="analytics-content">
-                                <div class="analytics-number" id="totalRequestsAdmin">0</div>
-                                <div class="analytics-label">Total de Solicitações</div>
-                            </div>
-                        </div>
-                        <div class="analytics-card">
-                            <div class="analytics-icon">⭐</div>
-                            <div class="analytics-content">
-                                <div class="analytics-number" id="totalReviews">0</div>
-                                <div class="analytics-label">Total de Avaliações</div>
-                            </div>
-                        </div>
-                        <div class="analytics-card">
-                            <div class="analytics-icon">📈</div>
-                            <div class="analytics-content">
-                                <div class="analytics-number" id="completionRate">0%</div>
-                                <div class="analytics-label">Taxa de Conclusão</div>
-                            </div>
-                        </div>
+                        <button class="btn btn-primary" onclick="sendGlobalNotification()">
+                            <span class="btn-text">Enviar para Todos</span>
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <div class="modal" id="generalModal">
-        <div class="modal-content" id="modalContent">
-            <div class="modal-icon" id="modalIcon">✅</div>
-            <h3 class="modal-title" id="modalTitle">Título</h3>
-            <p class="modal-message" id="modalMessage">Mensagem</p>
-            <button class="btn" onclick="closeModal()">Entendi</button>
         </div>
     </div>
 
     <!-- Platform Request Modal -->
     <div class="modal" id="platformRequestModal">
         <div class="modal-content">
-            <div class="modal-icon" id="platformIcon">🌐</div>
-            <h3 class="modal-title" id="platformTitle">Plataforma</h3>
-            <p class="modal-message">Descreva suas credenciais e detalhes para a automação:</p>
-            <div class="platform-request-form">
-                <div class="input-group">
-                    <label>📧 Email/Usuário da Plataforma</label>
-                    <input type="text" id="platformUsername" placeholder="Seu email ou usuário">
-                </div>
-                <div class="input-group">
-                    <label>🔒 Senha da Plataforma</label>
-                    <input type="password" id="platformPassword" placeholder="Sua senha">
-                </div>
-                <div class="input-group">
-                    <label>📝 Observações Adicionais</label>
-                    <textarea class="form-textarea" id="platformNotes" placeholder="Informações adicionais que possam ajudar..."></textarea>
-                </div>
+            <div class="modal-icon">🎯</div>
+            <h3 class="modal-title" id="platformTitle">Nova Solicitação</h3>
+            <p class="modal-message" id="platformMessage">Forneça as credenciais para nossa equipe</p>
+            <div class="input-group">
+                <label>📧 Email/Usuário</label>
+                <input type="text" id="platformUsername" class="input-field" placeholder="Seu acesso na plataforma">
             </div>
-            <button class="btn" onclick="submitPlatformRequest()">Enviar Solicitação</button>
-            <button class="btn btn-secondary" onclick="closePlatformRequestModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- Review Modal -->
-    <div class="modal" id="reviewModal">
-        <div class="modal-content">
-            <div class="modal-icon">⭐</div>
-            <h3 class="modal-title">Avaliar Plataforma</h3>
-            <p class="modal-message">Compartilhe sua experiência com a AutoPlat</p>
-            <div class="platform-request-form">
-                <div class="input-group">
-                    <label>⭐ Avaliação</label>
-                    <select id="reviewRating" style="width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 14px; color: #ffffff; font-size: 16px;">
-                        <option value="5">⭐⭐⭐⭐⭐ (5 estrelas)</option>
-                        <option value="4">⭐⭐⭐⭐ (4 estrelas)</option>
-                        <option value="3">⭐⭐⭐ (3 estrelas)</option>
-                        <option value="2">⭐⭐ (2 estrelas)</option>
-                        <option value="1">⭐ (1 estrela)</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>💬 Comentário</label>
-                    <textarea class="form-textarea" id="reviewComment" placeholder="Conte-nos sobre sua experiência..."></textarea>
-                </div>
+            <div class="input-group">
+                <label>🔒 Senha</label>
+                <input type="password" id="platformPassword" class="input-field" placeholder="Sua senha de acesso">
             </div>
-            <button class="btn" onclick="submitReview()">Enviar Avaliação</button>
-            <button class="btn btn-secondary" onclick="closeReviewModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- Fake Review Modal -->
-    <div class="modal" id="fakeReviewModal">
-        <div class="modal-content">
-            <div class="modal-icon">🎭</div>
-            <h3 class="modal-title">Criar Avaliação Falsa</h3>
-            <div class="platform-request-form">
-                <div class="input-group">
-                    <label>👤 Nome do Usuário</label>
-                    <input type="text" id="fakeReviewName" placeholder="Nome fictício">
-                </div>
-                <div class="input-group">
-                    <label>⭐ Avaliação</label>
-                    <select id="fakeReviewRating" style="width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 14px; color: #ffffff; font-size: 16px;">
-                        <option value="5">⭐⭐⭐⭐⭐ (5 estrelas)</option>
-                        <option value="4">⭐⭐⭐⭐ (4 estrelas)</option>
-                        <option value="3">⭐⭐⭐ (3 estrelas)</option>
-                        <option value="2">⭐⭐ (2 estrelas)</option>
-                        <option value="1">⭐ (1 estrela)</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>💬 Comentário</label>
-                    <textarea class="form-textarea" id="fakeReviewComment" placeholder="Texto da avaliação..."></textarea>
-                </div>
+            <div class="input-group">
+                <label>📝 Observações</label>
+                <textarea id="platformNotes" class="input-field" placeholder="Informações adicionais..." rows="3"></textarea>
             </div>
-            <button class="btn" onclick="submitFakeReview()">Criar Avaliação</button>
-            <button class="btn btn-secondary" onclick="closeFakeReviewModal()">Cancelar</button>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="submitPlatformRequest()">
+                    <span class="btn-text">Enviar Solicitação</span>
+                </button>
+                <button class="btn btn-secondary" onclick="closePlatformRequestModal()">
+                    <span class="btn-text">Cancelar</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -496,43 +1923,30 @@
     <div class="modal" id="userMenuModal">
         <div class="modal-content">
             <div class="modal-icon">👤</div>
-            <h3 class="modal-title" id="userMenuName">Menu</h3>
-            <div style="margin: 24px 0;">
-                <button class="btn" onclick="openProfileEdit()">✏️ Editar Perfil</button>
-                <button class="btn btn-secondary" onclick="logout()" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border: none; margin-top: 12px;">🚪 Sair</button>
+            <h3 class="modal-title" id="userMenuName">Menu do Usuário</h3>
+            <div style="margin: 2rem 0;">
+                <button class="btn btn-secondary" onclick="toggleFullscreen()" style="margin-bottom: 1rem;">
+                    <span class="btn-text" id="fullscreenText">Entrar em Tela Cheia</span>
+                </button>
+                <button class="btn btn-secondary" onclick="logout()" style="background: var(--system-red); border-color: var(--system-red);">
+                    <span class="btn-text">Sair</span>
+                </button>
             </div>
-            <button class="btn btn-secondary" onclick="closeUserMenuModal()">Fechar</button>
+            <button class="btn btn-secondary" onclick="closeUserMenuModal()">
+                <span class="btn-text">Fechar</span>
+            </button>
         </div>
     </div>
 
-    <!-- Profile Edit Modal -->
-    <div class="modal" id="profileEditModal">
-        <div class="modal-content profile-modal-content">
-            <div class="modal-icon">✏️</div>
-            <h3 class="modal-title">Editar Perfil</h3>
-            <div class="platform-request-form">
-                <div class="input-group">
-                    <label>👤 Nome Completo</label>
-                    <input type="text" id="editFullName" placeholder="Seu nome completo">
-                </div>
-                <div class="input-group">
-                    <label>🎒 Número de Matrícula</label>
-                    <input type="text" id="editRegistration" placeholder="Sua matrícula">
-                </div>
-                <div class="input-group">
-                    <label>🏫 Escola</label>
-                    <input type="text" id="editSchool" placeholder="Sua escola">
-                </div>
-                <div class="profile-upload">
-                    <div class="profile-preview" onclick="document.getElementById('editProfileImageInput').click()">
-                        <span id="editProfilePreviewIcon">📷</span>
-                        <img id="editProfilePreviewImg" style="display: none;">
-                    </div>
-                    <input type="file" id="editProfileImageInput" accept="image/*" onchange="previewEditProfileImage(event)" style="display: none;">
-                </div>
-            </div>
-            <button class="btn" onclick="updateProfile()">Salvar Alterações</button>
-            <button class="btn btn-secondary" onclick="closeProfileEditModal()">Cancelar</button>
+    <!-- General Modal -->
+    <div class="modal" id="generalModal">
+        <div class="modal-content">
+            <div class="modal-icon" id="modalIcon">✅</div>
+            <h3 class="modal-title" id="modalTitle">Título</h3>
+            <p class="modal-message" id="modalMessage">Mensagem</p>
+            <button class="btn btn-primary" onclick="closeModal()">
+                <span class="btn-text">Entendi</span>
+            </button>
         </div>
     </div>
 
